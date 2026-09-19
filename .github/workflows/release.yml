@@ -1,0 +1,67 @@
+# Release: build the two artifacts via tools/make-release.ps1 and attach them to a GitHub release.
+#   - Momentum4Control-Setup-<ver>.exe    (Inno Setup installer, per-user)
+#   - Momentum4Control-<ver>-portable.zip (self-contained + portable marker)
+#
+# Triggers:
+#   - tag v*            -> build + create a GitHub release with both files attached.
+#   - workflow_dispatch -> build + upload as a workflow artifact only. Optional version input.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (empty = from Directory.Build.props)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  package:
+    name: setup.exe + portable
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build artifacts (setup.exe + portable.zip)
+        shell: pwsh
+        run: |
+          $version = ''
+          if ($env:GITHUB_REF -like 'refs/tags/v*') { $version = $env:GITHUB_REF.Substring(11) }
+          elseif ('${{ inputs.version }}') { $version = '${{ inputs.version }}' }
+          $params = @{ Dist = "$env:GITHUB_WORKSPACE\dist" }
+          if ($version) { $params['Version'] = $version }
+          .\tools\make-release.ps1 @params
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Get-ChildItem "$env:GITHUB_WORKSPACE\dist" | ForEach-Object { Get-FileHash $_.FullName -Algorithm SHA256 | Format-List Hash, Path }
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Momentum4Control-dist
+          path: dist/*
+          retention-days: 30
+
+      - name: GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $files = Get-ChildItem "$env:GITHUB_WORKSPACE\dist" -File | ForEach-Object { $_.FullName }
+          gh release create $env:GITHUB_REF_NAME @files --title "MOMENTUM 4 Control $env:GITHUB_REF_NAME" --notes "Installer (setup.exe) and portable ZIP. Built by the release workflow."

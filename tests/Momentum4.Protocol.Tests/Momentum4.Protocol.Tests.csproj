@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Momentum4.Protocol\Momentum4.Protocol.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Katalog ↔ Doku-Abgleich und Mitschnitte als Testdaten -->
+    <!-- Nur vorhanden, wenn docs/ mitkommt (im öffentlichen Repo ist docs/ ausgeschlossen; der Katalog-Test überspringt dann). -->
+    <None Include="..\..\docs\protocol.md" Link="docs\protocol.md" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\..\docs\protocol.md')" />
+    <None Include="..\CapturedPackets\**\*.json" LinkBase="CapturedPackets" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

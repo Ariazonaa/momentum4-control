@@ -1,0 +1,21 @@
+{
+  "title": "localName (Feature 20): Gerätename lesen; Getter-Kandidaten geprüft",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc probe20 (16:33), nur lesend; Kandidaten aus der Blutter-Analyse (Feature 20 = localName, Basis 0x2800)",
+  "reference": "docs/protocol.md §6.11; research.md §4.13; Rohdaten poc-20260919.log",
+  "anonymized": true,
+  "context": "Feature 20 nimmt die Notification-Anmeldung an, schickt aber keinen Dump. Getter-Suche mit leerer Payload: 0x2803/05/07 Error Reason 0x01 (Operation unbekannt); 0x2801 Reason 0x03 (Parameter nötig → Setter); 0x2800 leere Antwort; 0x2802 liefert den Gerätenamen als UTF-8. Kein Schreiben.",
+  "steps": [
+    {
+      "command": "GetLocalName (0495/2802)",
+      "tx": "FF 03 00 00 04 95 28 02",
+      "rx": "FF 03 00 0A 04 95 29 02 4D 4F 4D 45 4E 54 55 4D 20 34",
+      "decoder": "raw",
+      "expected": "4D 4F 4D 45 4E 54 55 4D 20 34",
+      "note": "= \"MOMENTUM 4\" (UTF-8); Getter bestätigt"
+    }
+  ]
+}

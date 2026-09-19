@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(M4WindowsTargetFramework)</TargetFramework>
+    <SupportedOSPlatformVersion>$(M4MinWindowsVersion)</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Momentum4.Bluetooth\Momentum4.Bluetooth.csproj" />
+  </ItemGroup>
+
+</Project>

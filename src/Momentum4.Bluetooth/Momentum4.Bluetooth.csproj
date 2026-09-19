@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(M4WindowsTargetFramework)</TargetFramework>
+    <SupportedOSPlatformVersion>$(M4MinWindowsVersion)</SupportedOSPlatformVersion>
+    <RootNamespace>Momentum4.Bluetooth</RootNamespace>
+    <Description>Windows-Bluetooth-Transport (WinRT RFCOMM) und Geräteerkennung für den MOMENTUM 4.</Description>
+    <!-- LibraryImport (cfgmgr32 für den Akku über Windows) erzeugt unsicheren Code. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Momentum4.Core\Momentum4.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Momentum4.Bluetooth.Tests" />
+  </ItemGroup>
+
+</Project>

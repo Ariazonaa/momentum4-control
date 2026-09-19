@@ -1,0 +1,53 @@
+{
+  "title": "Phase G: gekoppeltes Gerät (Handy) per 0x1402 verbinden",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc peer connect 2 <Handy> zweimal: 01:24 (das Handy hatte die Kopplung vergessen) und 01:27 (nach neuem Koppeln und Trennen am Handy); mit Zustimmung des Users, der das Handy bestimmt hat",
+  "reference": "docs/protocol.md §6.6, §8, §12; Rohdaten poc-20260919.log. Gerätenamen anonymisiert wie im Stufe-4-Mitschnitt (Platz 0 = dieser PC, Platz 2 = Handy)",
+  "anonymized": true,
+  "context": "Liste: 4 Einträge, max. 2 Verbindungen, dieser PC auf Platz 0 verbunden. Versuch 1: 0x1402 [02] wird quittiert, 0x1404 bleibt bei [02 00], nach 2,7 s kommt 0x1484 [02 00] zweimal – das Handy hatte die Kopplung vergessen, die Verbindung kam nicht zustande. Versuch 2 (Handy neu gekoppelt, am Handy getrennt): nach 2,9 s liefert 0x1404 [02 01], danach 0x1484 [02 01] (4,7 s). Der PC blieb beide Male verbunden, die Reihenfolge der Liste blieb gleich. Getrennt wurde per App nie (0x1403 ist gesperrt).",
+  "steps": [
+    {
+      "command": "ConnectPairedDevice [02] (0495/1402)",
+      "tx": "FF 03 00 01 04 95 14 02 02",
+      "rx": "FF 03 00 00 04 95 15 02",
+      "decoder": "empty",
+      "expected": "",
+      "note": "01:27:17.982 Verbinden mit Platz 2 (Handy); Antwort nach 17 ms, noch bevor die Verbindung steht"
+    },
+    {
+      "command": "GetPairedDeviceStatus [02] (0495/1404)",
+      "tx": "FF 03 00 01 04 95 14 04 02",
+      "rx": "FF 03 00 02 04 95 15 04 02 00",
+      "decoder": "raw",
+      "expected": "02 00",
+      "note": "während des Verbindungsaufbaus: [index, 0] = nicht verbunden"
+    },
+    {
+      "command": "GetPairedDeviceStatus [02] (0495/1404)",
+      "tx": "FF 03 00 01 04 95 14 04 02",
+      "rx": "FF 03 00 02 04 95 15 04 02 01",
+      "decoder": "raw",
+      "expected": "02 01",
+      "note": "01:27:20.896, 2,9 s nach 0x1402: verbunden"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "0495/1484",
+      "rx": "FF 03 00 02 04 95 14 84 02 00",
+      "decoder": "raw",
+      "expected": "02 00",
+      "note": "Versuch 1, 01:24:11.488 und .498 (zweimal), 2,7 s nach 0x1402: Verbindungsversuch gescheitert"
+    },
+    {
+      "id": "0495/1484",
+      "rx": "FF 03 00 02 04 95 14 84 02 01",
+      "decoder": "raw",
+      "expected": "02 01",
+      "note": "Versuch 2, 01:27:22.646, 4,7 s nach 0x1402: Handy verbunden"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "title": "Automatische Pause bei Transparenz (0x1800/0x1801)",
+  "date": "2026-09-19",
+  "firmware": "3.38.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "Der User schaltete in Smart Control „Automatische Pause“ an (0x1801: 0→1), dann m4poc autopause off (0x1800 [00], zurück auf 0)",
+  "reference": "docs/protocol.md §6.8, §10; Rohdaten poc-20260919.log; AirPlay-Screenshot",
+  "anonymized": true,
+  "context": "Bedeutung von 0x1800/0x1801 per Smart Control (über LonelyScreen gespiegelt) geklärt: Schalter „Automatische Pause – pausieren, wenn Transparenz aktiv ist“. An = 0x1801 liest 1, aus = 0. Der Setter 0x1800 wirkt genauso (Write → Verify).",
+  "steps": [
+    {
+      "command": "SetTransparentHearingMode [00] (0495/1800)",
+      "tx": "FF 03 00 01 04 95 18 00 00",
+      "rx": "FF 03 00 00 04 95 19 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Automatische Pause aus"
+    },
+    {
+      "command": "GetTransparentHearingMode (0495/1801)",
+      "tx": "FF 03 00 00 04 95 18 01",
+      "rx": "FF 03 00 01 04 95 19 01 00",
+      "decoder": "raw",
+      "expected": "00",
+      "note": "0 = Musik läuft weiter"
+    }
+  ]
+}

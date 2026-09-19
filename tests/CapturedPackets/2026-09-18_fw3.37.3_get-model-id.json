@@ -1,0 +1,15 @@
+{
+  "title": "Modell-ID lesen",
+  "date": "2026-09-18",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0); auf Kanal 2 byte-gleich",
+  "action": "GET 0x0495/0x1206 (GetModelId), Hardware-Stufe 2",
+  "reference": "docs/protocol.md §6.5; m4poc read",
+  "anonymized": true,
+  "exchange": [
+    { "dir": "TX", "hex": "FF 03 00 00 04 95 12 06" },
+    { "dir": "RX", "hex": "FF 03 00 0D 04 95 13 06 4D 34 41 45 42 54 20 42 6C 61 63 6B 00", "note": "\"M4AEBT Black\" + Nullbyte, 13 Byte Payload, ein Read, 24 ms" }
+  ],
+  "expected": { "decoder": "modelId", "value": "M4AEBT Black" }
+}

@@ -1,0 +1,21 @@
+{
+  "title": "Codec lesen (0x0800)",
+  "date": "2026-09-19",
+  "firmware": "3.38.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc features (17:13), nur lesend",
+  "reference": "docs/protocol.md §6.3; Rohdaten poc-20260919.log",
+  "anonymized": true,
+  "context": "Der Getter 0x0800 liefert 1 Byte nach dem Codec-Enum: 05 = aptX HD. Der M4 nutzt den Alternative A2DP Driver.",
+  "steps": [
+    {
+      "command": "GetCodec (0495/0800)",
+      "tx": "FF 03 00 00 04 95 08 00",
+      "rx": "FF 03 00 01 04 95 09 00 05",
+      "decoder": "codec",
+      "expected": "AptXHd",
+      "note": "aptX HD"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "title": "Transparent Hearing _TW (0x1803) gegen den ANC-Pegel geprüft",
+  "date": "2026-09-19",
+  "firmware": "3.38.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc set level 30 → features → set level 70 → features → set mode transparency (18:50–18:53); Ausgangszustand (Transparenz, Pegel 100) danach wiederhergestellt",
+  "reference": "docs/protocol.md §6.8; Rohdaten poc-20260919.log (18:50:41, 18:50:45, 18:50:48, 18:50:52, 18:53:44)",
+  "anonymized": true,
+  "context": "Klärt, ob 0x1803 (m4.json: TransparentHearing_Status_Get_TW) den Pegel spiegelt. set level schaltet zuerst Transparent Hearing aus (0x1804 [00]) und schreibt dann den Pegel (0x1A02). Bei Pegel 30 und 70 – jeweils per 0x1A03 zurückgelesen – blieb 0x1803 konstant 0x64 = 100, ebenso nach dem Wiederherstellen der Transparenz (Pegel 100). 0x1803 spiegelt also weder den Pegel (0x1A03) noch den TH-Status (0x1805 war 1/0/1), sondern liefert einen festen Wert 100. Der Suffix _TW (True Wireless) deutet auf ein Earbud-Feld, das der Over-Ear-M4 mit einem Vorgabewert beantwortet.",
+  "steps": [
+    {
+      "command": "SetTransparentHearingStatus (0495/1804) aus",
+      "tx": "FF 03 00 01 04 95 18 04 00",
+      "rx": "FF 03 00 00 04 95 19 04",
+      "decoder": "empty",
+      "expected": "",
+      "note": "set level schaltet zuerst Transparent Hearing aus; danach greift der Pegel als ANC-Stärke"
+    },
+    {
+      "command": "SetAncLevel (0495/1A02) 30",
+      "tx": "FF 03 00 01 04 95 1A 02 1E",
+      "rx": "FF 03 00 00 04 95 1B 02",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Pegel auf 30; Notification 0x1A83 [1E] folgt separat"
+    },
+    {
+      "command": "GetAncLevel (0495/1A03) nach 30",
+      "tx": "FF 03 00 00 04 95 1A 03",
+      "rx": "FF 03 00 01 04 95 1B 03 1E",
+      "decoder": "ancLevel",
+      "expected": "30",
+      "note": "Pegel als 30 bestätigt"
+    },
+    {
+      "command": "GetTransparentHearingTw (0495/1803) bei Pegel 30",
+      "tx": "FF 03 00 00 04 95 18 03",
+      "rx": "FF 03 00 01 04 95 19 03 64",
+      "decoder": "raw",
+      "expected": "64",
+      "note": "0x1803 = 100, obwohl der Pegel 30 ist"
+    },
+    {
+      "command": "SetAncLevel (0495/1A02) 70",
+      "tx": "FF 03 00 01 04 95 1A 02 46",
+      "rx": "FF 03 00 00 04 95 1B 02",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Pegel auf 70"
+    },
+    {
+      "command": "GetAncLevel (0495/1A03) nach 70",
+      "tx": "FF 03 00 00 04 95 1A 03",
+      "rx": "FF 03 00 01 04 95 1B 03 46",
+      "decoder": "ancLevel",
+      "expected": "70",
+      "note": "Pegel als 70 bestätigt"
+    },
+    {
+      "command": "GetTransparentHearingTw (0495/1803) bei Pegel 70",
+      "tx": "FF 03 00 00 04 95 18 03",
+      "rx": "FF 03 00 01 04 95 19 03 64",
+      "decoder": "raw",
+      "expected": "64",
+      "note": "0x1803 weiterhin 100, obwohl der Pegel 70 ist → spiegelt den Pegel nicht"
+    },
+    {
+      "command": "SetTransparentHearingStatus (0495/1804) an",
+      "tx": "FF 03 00 01 04 95 18 04 01",
+      "rx": "FF 03 00 00 04 95 19 04",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Transparenz wiederhergestellt; das Headset setzt den Pegel dabei selbst auf 100"
+    },
+    {
+      "command": "GetTransparentHearingTw (0495/1803) nach Wiederherstellen",
+      "tx": "FF 03 00 00 04 95 18 03",
+      "rx": "FF 03 00 01 04 95 19 03 64",
+      "decoder": "raw",
+      "expected": "64",
+      "note": "0x1803 unverändert 100 – konstant über alle drei Zustände"
+    }
+  ]
+}

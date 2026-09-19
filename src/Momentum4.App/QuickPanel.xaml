@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Schnellzugriff am Tray-Symbol (Linksklick): Noise Control und ANC-Stärke, ohne das Hauptfenster zu öffnen.
+    Schließt sich, sobald es den Fokus verliert.
+-->
+<Window
+    x:Class="Momentum4.App.QuickPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="using:Momentum4.App.Localization"
+    Title="MOMENTUM 4 – Schnellzugriff">
+
+    <Grid Background="{StaticResource AmoledBackgroundBrush}" KeyDown="OnKeyDown">
+        <StackPanel
+            x:Name="Root"
+            Padding="18,16,18,18"
+            VerticalAlignment="Top"
+            Spacing="12">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Spacing="2">
+                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="MOMENTUM 4" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" />
+                </StackPanel>
+                <TextBlock
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    Text="{x:Bind ViewModel.BatteryText, Mode=OneWay}" />
+            </Grid>
+
+            <StackPanel IsHitTestVisible="{x:Bind ViewModel.NoiseControl.IsAvailable, Mode=OneWay}" Spacing="4">
+                <RadioButtons
+                    ItemsSource="{x:Bind ViewModel.NoiseControl.Modes}"
+                    MaxColumns="2"
+                    SelectedIndex="{x:Bind ViewModel.NoiseControl.SelectedModeIndex, Mode=TwoWay}" />
+                <Slider
+                    Header="{loc:Loc Key=AncStrength}"
+                    Maximum="100"
+                    Minimum="0"
+                    StepFrequency="1"
+                    Value="{x:Bind ViewModel.NoiseControl.Strength, Mode=TwoWay}"
+                    Visibility="{x:Bind ViewModel.NoiseControl.ShowStrength, Mode=OneWay}" />
+            </StackPanel>
+
+            <TextBlock
+                Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="{x:Bind ViewModel.ActionError, Mode=OneWay}"
+                TextWrapping="Wrap"
+                Visibility="{x:Bind ViewModel.ShowActionError, Mode=OneWay}" />
+
+            <Button
+                HorizontalAlignment="Stretch"
+                Click="OnOpenClick"
+                Content="{loc:Loc Key=OpenApp}" />
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,61 @@
+{
+  "title": "Töne & Sprachansagen: nur Töne, aus, zurück auf Töne und Stimme",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc set prompts tones (05:17), off (05:21), voice (05:23); dazwischen machte der User jeweils die Touch-Geste Transparenz ↔ ANC und beschrieb, was er hört",
+  "reference": "docs/protocol.md §6.3, §10, §12; Rohdaten poc-20260919.log",
+  "anonymized": true,
+  "context": "Ausgangszustand 2 (Töne und Stimme). 0x0801 [01]: der User hört bei der Geste nur Töne. 0x0801 [00]: weder Töne noch Stimme. Danach 0x0801 [02], wieder der Ausgangszustand. Jeder Setter antwortet mit leerer Response, 0x0802 liest den neuen Wert zurück. Keine Notification. Damit stimmt m4.json (Setting_AudioPromptMode: toneVoiceOff 0, toneOn 1, toneVoiceOn 2); [DS] hatte die Einstellung nicht gefunden, weil 0x0802 nie gelesen wurde.",
+  "steps": [
+    {
+      "command": "SetAudioPromptMode [01] (0495/0801)",
+      "tx": "FF 03 00 01 04 95 08 01 01",
+      "rx": "FF 03 00 00 04 95 09 01",
+      "decoder": "empty",
+      "expected": "",
+      "note": "05:17:54.460 TonesOnly"
+    },
+    {
+      "command": "GetAudioPromptMode (0495/0802)",
+      "tx": "FF 03 00 00 04 95 08 02",
+      "rx": "FF 03 00 01 04 95 09 02 01",
+      "decoder": "audioPromptMode",
+      "expected": "TonesOnly",
+      "note": "Rücklesen bestätigt; Touch-Geste: laut User „nur Töne“"
+    },
+    {
+      "command": "SetAudioPromptMode [00] (0495/0801)",
+      "tx": "FF 03 00 01 04 95 08 01 00",
+      "rx": "FF 03 00 00 04 95 09 01",
+      "decoder": "empty",
+      "expected": "",
+      "note": "05:21:32.877 Off"
+    },
+    {
+      "command": "GetAudioPromptMode (0495/0802)",
+      "tx": "FF 03 00 00 04 95 08 02",
+      "rx": "FF 03 00 01 04 95 09 02 00",
+      "decoder": "audioPromptMode",
+      "expected": "Off",
+      "note": "Rücklesen bestätigt; Touch-Geste: laut User „gar nichts mehr, Töne oder Stimme“"
+    },
+    {
+      "command": "SetAudioPromptMode [02] (0495/0801)",
+      "tx": "FF 03 00 01 04 95 08 01 02",
+      "rx": "FF 03 00 00 04 95 09 01",
+      "decoder": "empty",
+      "expected": "",
+      "note": "05:23:07.673 TonesAndVoice"
+    },
+    {
+      "command": "GetAudioPromptMode (0495/0802)",
+      "tx": "FF 03 00 00 04 95 08 02",
+      "rx": "FF 03 00 01 04 95 09 02 02",
+      "decoder": "audioPromptMode",
+      "expected": "TonesAndVoice",
+      "note": "Rücklesen bestätigt; zurück auf den Ausgangszustand"
+    }
+  ]
+}

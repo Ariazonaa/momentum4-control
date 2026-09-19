@@ -1,0 +1,45 @@
+{
+  "title": "localName (Feature 20): Gerätenamen setzen und zurücklesen",
+  "date": "2026-09-19",
+  "firmware": "3.38.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc setname \"M4 Test\" und setname \"MOMENTUM 4\" (16:41); der User gab das Umbenennen frei",
+  "reference": "docs/protocol.md §6.11; Rohdaten poc-20260919.log",
+  "anonymized": true,
+  "context": "Name als roher UTF-8 ohne Nullterminierung. 0x2801 setzt, antwortet leer; 0x2802 liest den neuen Namen zurück. Kein Neustart, keine Trennung (3 s beobachtet). Danach wieder \"MOMENTUM 4\". FW inzwischen 3.38.3 (Headset hat sich zwischen 16:33 und 16:38 selbst aktualisiert).",
+  "steps": [
+    {
+      "command": "SetLocalName [M4 Test] (0495/2801)",
+      "tx": "FF 03 00 07 04 95 28 01 4D 34 20 54 65 73 74",
+      "rx": "FF 03 00 00 04 95 29 01",
+      "decoder": "empty",
+      "expected": "",
+      "note": "16:41 Testname gesetzt"
+    },
+    {
+      "command": "GetLocalName (0495/2802)",
+      "tx": "FF 03 00 00 04 95 28 02",
+      "rx": "FF 03 00 07 04 95 29 02 4D 34 20 54 65 73 74",
+      "decoder": "raw",
+      "expected": "4D 34 20 54 65 73 74",
+      "note": "= \"M4 Test\", bestätigt"
+    },
+    {
+      "command": "SetLocalName [MOMENTUM 4] (0495/2801)",
+      "tx": "FF 03 00 0A 04 95 28 01 4D 4F 4D 45 4E 54 55 4D 20 34",
+      "rx": "FF 03 00 00 04 95 29 01",
+      "decoder": "empty",
+      "expected": "",
+      "note": "zurück auf den Originalnamen"
+    },
+    {
+      "command": "GetLocalName (0495/2802)",
+      "tx": "FF 03 00 00 04 95 28 02",
+      "rx": "FF 03 00 0A 04 95 29 02 4D 4F 4D 45 4E 54 55 4D 20 34",
+      "decoder": "raw",
+      "expected": "4D 4F 4D 45 4E 54 55 4D 20 34",
+      "note": "= \"MOMENTUM 4\""
+    }
+  ]
+}

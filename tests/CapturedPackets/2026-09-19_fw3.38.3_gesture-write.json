@@ -1,0 +1,37 @@
+{
+  "title": "Gestenbelegung 0x1600 schreiben (mechanisch akzeptiert, Wirkung offen)",
+  "date": "2026-09-19",
+  "firmware": "3.38.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc gesture set (17:2x) mit dem User; danach zurück auf None",
+  "reference": "docs/protocol.md §6.7; Rohdaten poc-20260919.log",
+  "anonymized": true,
+  "context": "Der M4 akzeptiert 0x1600 [00, pattern, function] fuer Muster 9/10 und liest den Wert per 0x1601 zurueck. Eine hoerbare Wirkung gab es im Test nicht; die offizielle App zeigt die Gesten als nicht anpassbar. Danach wieder None.",
+  "steps": [
+    {
+      "command": "SetMmiConfig [00 09 02] (0495/1600)",
+      "tx": "FF 03 00 03 04 95 16 00 00 09 02",
+      "rx": "FF 03 00 00 04 95 17 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Muster 9 = NextTrack gesetzt"
+    },
+    {
+      "command": "GetMmiConfig [00 09] (0495/1601)",
+      "tx": "FF 03 00 02 04 95 16 01 00 09",
+      "rx": "FF 03 00 03 04 95 17 01 00 09 02",
+      "decoder": "raw",
+      "expected": "00 09 02",
+      "note": "Ruecklesen bestaetigt"
+    },
+    {
+      "command": "SetMmiConfig [00 09 00] (0495/1600)",
+      "tx": "FF 03 00 03 04 95 16 00 00 09 00",
+      "rx": "FF 03 00 00 04 95 17 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "zurueck auf None"
+    }
+  ]
+}

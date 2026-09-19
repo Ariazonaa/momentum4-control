@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="Momentum4.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Momentum4.App.ViewModels"
+    xmlns:loc="using:Momentum4.App.Localization"
+    Title="MOMENTUM 4">
+
+    <!--  AMOLED: schwarzer Hintergrund statt Mica; Kartenstil in App.xaml  -->
+    <Grid Background="{StaticResource AmoledBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <ProgressBar
+            VerticalAlignment="Top"
+            IsIndeterminate="True"
+            Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay}" />
+
+        <!--  Kopfzeile (Spezifikation §19): Name, Akku, Status  -->
+        <Grid Padding="24,16,24,8" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Spacing="2">
+                <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="MOMENTUM 4" />
+                <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" />
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind ViewModel.DetailText, Mode=OneWay}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="4">
+                <TextBlock
+                    HorizontalAlignment="Right"
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    Text="{x:Bind ViewModel.BatteryText, Mode=OneWay}" />
+                <Button
+                    HorizontalAlignment="Right"
+                    AutomationProperties.Name="{loc:Loc Key=Settings}"
+                    Command="{x:Bind ViewModel.ToggleSettingsCommand}"
+                    Style="{StaticResource SubtleButtonStyle}"
+                    ToolTipService.ToolTip="{loc:Loc Key=Settings}">
+                    <FontIcon FontSize="16" Glyph="&#xE713;" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!--  Einstellungen und Diagnose (Spezifikation §20/§21)  -->
+        <ScrollViewer Grid.Row="1" Visibility="{x:Bind ViewModel.ShowSettings, Mode=OneWay}">
+            <StackPanel Padding="24,8,24,24" Spacing="12">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{loc:Loc Key=General}" />
+                        <ComboBox
+                            MinWidth="160"
+                            Header="{loc:Loc Key=RefreshInterval}"
+                            ItemsSource="{x:Bind ViewModel.Settings.RefreshIntervalOptions}"
+                            SelectedIndex="{x:Bind ViewModel.Settings.RefreshIntervalIndex, Mode=TwoWay}" />
+                        <ComboBox
+                            MinWidth="160"
+                            Header="{loc:Loc Key=LanguageLabel}"
+                            ItemsSource="{x:Bind ViewModel.Settings.LanguageOptions}"
+                            SelectedIndex="{x:Bind ViewModel.Settings.LanguageIndex, Mode=TwoWay}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.Settings.SavedHint, Mode=OneWay}" />
+                        <ToggleSwitch OffContent="{loc:Loc Key=StateOff}" OnContent="{loc:Loc Key=StateOn}" Header="{loc:Loc Key=StartWithWindows}" IsOn="{x:Bind ViewModel.Settings.StartWithWindows, Mode=TwoWay}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.Settings.AutostartHint, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                        <ToggleSwitch OffContent="{loc:Loc Key=StateOff}" OnContent="{loc:Loc Key=StateOn}" Header="{loc:Loc Key=StartMinimized}" IsOn="{x:Bind ViewModel.Settings.StartMinimized, Mode=TwoWay}" />
+                        <ToggleSwitch OffContent="{loc:Loc Key=StateOff}" OnContent="{loc:Loc Key=StateOn}" Header="{loc:Loc Key=BatteryInTooltip}" IsOn="{x:Bind ViewModel.Settings.BatteryInTooltip, Mode=TwoWay}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{loc:Loc Key=CloseHint}"
+                            TextWrapping="Wrap" />
+                        <ToggleSwitch OffContent="{loc:Loc Key=StateOff}" OnContent="{loc:Loc Key=StateOn}" Header="{loc:Loc Key=RestoreTransparency}" IsOn="{x:Bind ViewModel.Settings.RestoreTransparency, Mode=TwoWay}" />
+                        <TextBlock Margin="0,8,0,0" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{loc:Loc Key=DeviceName}" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox MaxLength="30" Text="{x:Bind ViewModel.Settings.NewDeviceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Grid.Column="1" Command="{x:Bind ViewModel.Settings.RenameCommand}" Content="{loc:Loc Key=Rename}" />
+                        </Grid>
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.Settings.DeviceNameHint, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{loc:Loc Key=RestoreTransparencyHint}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{loc:Loc Key=Advanced}" />
+                        <ToggleSwitch OffContent="{loc:Loc Key=StateOff}" OnContent="{loc:Loc Key=StateOn}" Header="{loc:Loc Key=ProtocolLogging}" IsOn="{x:Bind ViewModel.Settings.ProtocolLogging, Mode=TwoWay}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{loc:Loc Key=ProtocolLoggingHint}"
+                            TextWrapping="Wrap" />
+                        <CheckBox Content="{loc:Loc Key=AnonymizeExport}" IsChecked="{x:Bind ViewModel.Settings.AnonymizeExport, Mode=TwoWay}" />
+                        <Button Command="{x:Bind ViewModel.Settings.ExportDiagnosticsCommand}" Content="{loc:Loc Key=ExportDiagnostics}" />
+                        <Button
+                            Command="{x:Bind ViewModel.Settings.ShowInspectorCommand}"
+                            Content="{loc:Loc Key=InspectorDev}"
+                            Visibility="{x:Bind ViewModel.Settings.IsDevelopmentBuild}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            IsTextSelectionEnabled="True"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.Settings.ExportHint, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{loc:Loc Key=Diagnostics}" />
+                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{loc:Loc Key=Headset}" />
+                        <TextBlock IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.Settings.Headset, Mode=OneWay}" />
+                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{loc:Loc Key=Firmware}" />
+                        <TextBlock IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.Settings.Firmware, Mode=OneWay}" />
+                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{loc:Loc Key=SerialNumber}" />
+                        <TextBlock IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.Settings.SerialNumber, Mode=OneWay}" />
+                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{loc:Loc Key=PromptLanguageLabel}" />
+                        <TextBlock IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.Settings.PromptLanguage, Mode=OneWay}" />
+                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{loc:Loc Key=Bluetooth}" />
+                        <TextBlock IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.Settings.Bluetooth, Mode=OneWay}" />
+                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{loc:Loc Key=Protocol}" />
+                        <TextBlock Text="{x:Bind ViewModel.Settings.Protocol}" TextWrapping="Wrap" />
+                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{loc:Loc Key=LastFullRead}" />
+                        <TextBlock Text="{x:Bind ViewModel.Settings.LastRefresh, Mode=OneWay}" />
+                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{loc:Loc Key=ProtocolLog}" />
+                        <TextBlock IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.Settings.LogDirectory}" TextWrapping="Wrap" />
+                        <Button Command="{x:Bind ViewModel.Settings.OpenLogDirectoryCommand}" Content="{loc:Loc Key=OpenLogFolder}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.Settings.Version}" />
+                        <ToggleSwitch
+                            OffContent="{loc:Loc Key=StateOff}"
+                            OnContent="{loc:Loc Key=StateOn}"
+                            Header="{loc:Loc Key=UpdatesLabel}"
+                            IsOn="{x:Bind ViewModel.Settings.CheckForUpdates, Mode=TwoWay}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Command="{x:Bind ViewModel.Settings.CheckUpdateCommand}" Content="{loc:Loc Key=CheckNow}" />
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="{x:Bind ViewModel.Settings.UpdateStatus, Mode=OneWay}" />
+                            <HyperlinkButton
+                                VerticalAlignment="Center"
+                                Command="{x:Bind ViewModel.Settings.OpenReleaseCommand}"
+                                Content="{loc:Loc Key=OpenRelease}"
+                                Visibility="{x:Bind ViewModel.Settings.HasUpdateLink, Mode=OneWay}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Button Command="{x:Bind ViewModel.ToggleSettingsCommand}" Content="{loc:Loc Key=Back}" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <ScrollViewer Grid.Row="1" Visibility="{x:Bind ViewModel.ShowMain, Mode=OneWay}">
+            <StackPanel Padding="24,8,24,24" Spacing="12">
+
+                <!--  Getrennt / kein Headset: Hinweis statt Absturz (Spezifikation §31)  -->
+                <InfoBar
+                    Title="{x:Bind ViewModel.ProblemTitle, Mode=OneWay}"
+                    IsClosable="False"
+                    IsOpen="{x:Bind ViewModel.ShowProblem, Mode=OneWay}"
+                    Message="{x:Bind ViewModel.ProblemMessage, Mode=OneWay}"
+                    Severity="Warning">
+                    <InfoBar.ActionButton>
+                        <Button Command="{x:Bind ViewModel.RetryCommand}" Content="{x:Bind ViewModel.ProblemAction, Mode=OneWay}" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+
+                <InfoBar
+                    Title="Nicht ausgeführt"
+                    IsOpen="{x:Bind ViewModel.ShowActionError, Mode=TwoWay}"
+                    Message="{x:Bind ViewModel.ActionError, Mode=OneWay}"
+                    Severity="Error" />
+
+                <!--  Noise Control (Abweichung von §19: Moduswahl statt ANC↔Transparenz-Regler, architecture.md §7)  -->
+                <Border IsHitTestVisible="{x:Bind ViewModel.NoiseControl.IsAvailable, Mode=OneWay}" Style="{StaticResource Card}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{loc:Loc Key=NoiseControl}" />
+                        <RadioButtons
+                            ItemsSource="{x:Bind ViewModel.NoiseControl.Modes}"
+                            MaxColumns="4"
+                            SelectedIndex="{x:Bind ViewModel.NoiseControl.SelectedModeIndex, Mode=TwoWay}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.NoiseControl.ModeHint, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                        <StackPanel Visibility="{x:Bind ViewModel.NoiseControl.ShowStrength, Mode=OneWay}">
+                            <Slider
+                                Header="{loc:Loc Key=AncStrength}"
+                                Maximum="100"
+                                Minimum="0"
+                                StepFrequency="1"
+                                Value="{x:Bind ViewModel.NoiseControl.Strength, Mode=TwoWay}" />
+                        </StackPanel>
+                        <ComboBox
+                            MinWidth="160"
+                            Header="{loc:Loc Key=AntiWind}"
+                            ItemsSource="{x:Bind ViewModel.NoiseControl.AntiWindOptions}"
+                            SelectedIndex="{x:Bind ViewModel.NoiseControl.AntiWindIndex, Mode=TwoWay}" />
+                        <ToggleSwitch OffContent="{loc:Loc Key=StateOff}" OnContent="{loc:Loc Key=StateOn}" Header="{loc:Loc Key=AutoPauseTransparency}" IsOn="{x:Bind ViewModel.NoiseControl.AutoPause, Mode=TwoWay}" />
+                    </StackPanel>
+                </Border>
+
+                <!--  Equalizer: Frequenzen vom Gerät, Presets App-seitig  -->
+                <Border IsHitTestVisible="{x:Bind ViewModel.Equalizer.IsAvailable, Mode=OneWay}" Style="{StaticResource Card}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{loc:Loc Key=Equalizer}" />
+                        <ComboBox
+                            MinWidth="200"
+                            Header="{loc:Loc Key=SoundMode}"
+                            ItemsSource="{x:Bind ViewModel.Equalizer.SoundModes}"
+                            SelectedIndex="{x:Bind ViewModel.Equalizer.SoundModeIndex, Mode=TwoWay}" />
+                        <InfoBar
+                            IsClosable="False"
+                            IsOpen="{x:Bind ViewModel.Equalizer.ShowSoundModeHint, Mode=OneWay}"
+                            Message="{x:Bind ViewModel.Equalizer.SoundModeHint, Mode=OneWay}"
+                            Severity="Informational" />
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.Equalizer.Bands}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Spacing="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:EqBandViewModel">
+                                    <StackPanel Width="68" Spacing="4">
+                                        <TextBlock HorizontalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind GainText, Mode=OneWay}" />
+                                        <Slider
+                                            Height="150"
+                                            HorizontalAlignment="Center"
+                                            Maximum="{x:Bind Maximum}"
+                                            Minimum="{x:Bind Minimum}"
+                                            Orientation="Vertical"
+                                            StepFrequency="0.1"
+                                            TickFrequency="3"
+                                            TickPlacement="Outside"
+                                            Value="{x:Bind Gain, Mode=TwoWay}" />
+                                        <TextBlock
+                                            HorizontalAlignment="Center"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                            Text="{x:Bind FrequencyLabel}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ComboBox
+                                HorizontalAlignment="Stretch"
+                                Header="{loc:Loc Key=Preset}"
+                                ItemsSource="{x:Bind ViewModel.Equalizer.PresetNames}"
+                                PlaceholderText="{loc:Loc Key=CustomCurvePlaceholder}"
+                                SelectedIndex="{x:Bind ViewModel.Equalizer.SelectedPresetIndex, Mode=TwoWay}" />
+                            <Button Grid.Column="1" VerticalAlignment="Bottom" Content="{loc:Loc Key=Save}">
+                                <Button.Flyout>
+                                    <Flyout>
+                                        <StackPanel Width="240" Spacing="8">
+                                            <TextBox Header="{loc:Loc Key=CurveName}" Text="{x:Bind ViewModel.Equalizer.NewPresetName, Mode=TwoWay}" />
+                                            <Button Command="{x:Bind ViewModel.Equalizer.SavePresetCommand}" Content="{loc:Loc Key=SaveAsPreset}" />
+                                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind ViewModel.Equalizer.PresetFileHint, Mode=OneWay}" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                        </Grid>
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.Equalizer.PresetHint, Mode=OneWay}" />
+                        <ToggleSwitch
+                            OffContent="{loc:Loc Key=StateOff}"
+                            OnContent="{loc:Loc Key=StateOn}"
+                            Header="{loc:Loc Key=BassBoost}"
+                            IsOn="{x:Bind ViewModel.Equalizer.BassBoost, Mode=TwoWay}"
+                            Visibility="{x:Bind ViewModel.Equalizer.HasBassBoost, Mode=OneWay}" />
+                    </StackPanel>
+                </Border>
+
+                <!--  Verhalten: nur Touch meldet sich selbst (0x1687), der Rest kommt per Lesen (protocol.md §8)  -->
+                <Border
+                    IsHitTestVisible="{x:Bind ViewModel.Behavior.IsAvailable, Mode=OneWay}"
+                    Style="{StaticResource Card}"
+                    Visibility="{x:Bind ViewModel.Behavior.IsKnown, Mode=OneWay}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{loc:Loc Key=Behavior}" />
+                        <ToggleSwitch OffContent="{loc:Loc Key=StateOff}" OnContent="{loc:Loc Key=StateOn}" Header="{loc:Loc Key=OnHead}" IsOn="{x:Bind ViewModel.Behavior.OnHeadDetection, Mode=TwoWay}" />
+                        <ToggleSwitch OffContent="{loc:Loc Key=StateOff}" OnContent="{loc:Loc Key=StateOn}" Header="{loc:Loc Key=SmartPause}" IsOn="{x:Bind ViewModel.Behavior.SmartPause, Mode=TwoWay}" />
+                        <ToggleSwitch OffContent="{loc:Loc Key=StateOff}" OnContent="{loc:Loc Key=StateOn}" Header="{loc:Loc Key=TouchControls}" IsOn="{x:Bind ViewModel.Behavior.TouchControl, Mode=TwoWay}" />
+                        <ToggleSwitch OffContent="{loc:Loc Key=StateOff}" OnContent="{loc:Loc Key=StateOn}" Header="{loc:Loc Key=AutoAnswer}" IsOn="{x:Bind ViewModel.Behavior.AutoAnswer, Mode=TwoWay}" />
+                        <ToggleSwitch OffContent="{loc:Loc Key=StateOff}" OnContent="{loc:Loc Key=StateOn}" Header="{loc:Loc Key=ComfortCall}" IsOn="{x:Bind ViewModel.Behavior.ComfortCall, Mode=TwoWay}" />
+                        <ComboBox
+                            MinWidth="200"
+                            Margin="0,4,0,0"
+                            Header="{loc:Loc Key=Prompts}"
+                            ItemsSource="{x:Bind ViewModel.Behavior.PromptOptions}"
+                            SelectedIndex="{x:Bind ViewModel.Behavior.PromptIndex, Mode=TwoWay}" />
+                        <ComboBox
+                            MinWidth="200"
+                            Margin="0,4,0,0"
+                            Header="{loc:Loc Key=AutoPowerOff}"
+                            ItemsSource="{x:Bind ViewModel.Behavior.AutoOffOptions}"
+                            SelectedIndex="{x:Bind ViewModel.Behavior.AutoOffIndex, Mode=TwoWay}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.Behavior.AutoOffHint, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{loc:Loc Key=SettingsNotPushedHint}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!--  Geräte (Multipoint): Verbinden ja, Trennen nein (0x1403 gesperrt)  -->
+                <Border Style="{StaticResource Card}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{loc:Loc Key=Devices}" />
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.Devices.Peers}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:PeerViewModel">
+                                    <Grid Padding="0,4" ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="{x:Bind StatusText}" />
+                                        <Button
+                                            Grid.Column="2"
+                                            Command="{x:Bind ConnectCommand}"
+                                            Content="{loc:Loc Key=Connect}"
+                                            Visibility="{x:Bind CanConnect}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.Devices.Hint, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>

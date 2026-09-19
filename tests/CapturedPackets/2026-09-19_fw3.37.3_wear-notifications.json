@@ -1,0 +1,35 @@
+{
+  "title": "Tragezustand per Notification beim Ab- und Aufsetzen",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "App mit Protokoll-Logging (05:38:31–05:38:46); der User setzte das Headset etwa 8 s ab und wieder auf",
+  "reference": "docs/protocol.md §6.1, §8; Rohdaten app-20260919.log",
+  "anonymized": true,
+  "context": "Die App meldet Feature 2 an. Beim Absetzen kam 0x0482 [02] (nicht aufgesetzt) zweimal im Abstand von 10 ms, beim Aufsetzen 0x0482 [03] (aufgesetzt) einmal. Format wie 0x0502: genau 1 Byte. Die App zeigte „abgesetzt“/„aufgesetzt“ und protokollierte „Tragezustand gemeldet“.",
+  "steps": [],
+  "notifications": [
+    {
+      "id": "0495/0482",
+      "rx": "FF 03 00 01 04 95 04 82 02",
+      "decoder": "wearState",
+      "expected": "NotWorn",
+      "note": "05:38:36.573 abgesetzt"
+    },
+    {
+      "id": "0495/0482",
+      "rx": "FF 03 00 01 04 95 04 82 02",
+      "decoder": "wearState",
+      "expected": "NotWorn",
+      "note": "05:38:36.583 dieselbe Meldung ein zweites Mal"
+    },
+    {
+      "id": "0495/0482",
+      "rx": "FF 03 00 01 04 95 04 82 03",
+      "decoder": "wearState",
+      "expected": "Worn",
+      "note": "05:38:44.178 aufgesetzt"
+    }
+  ]
+}

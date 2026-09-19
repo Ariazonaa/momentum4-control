@@ -1,0 +1,162 @@
+{
+  "title": "Hardware-Stufe 5: Notifications anmelden, Zustands-Dump, Änderung per Touch",
+  "date": "2026-09-18",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc monitor --notifications (10 min): 0495/0007 für Features 3, 13, 8, 10; danach Polling alle 10 s; der User schaltete um 23:46 per Touch-Geste mehrfach um",
+  "reference": "docs/protocol.md §5.2, §8; Rohdaten monitor-20260918-234906.json und poc-20260918.log",
+  "anonymized": true,
+  "context": "Jede Anmeldung wird mit einer leeren Response 0x0107 bestätigt; direkt danach schickt das Headset den aktuellen Stand des Features als Notifications (Feature 10: kein Dump). Die Touch-Geste änderte nur den Pegel (0x1A83: 0 ↔ 100); 0x1805 (Transparent Hearing) blieb laut Polling durchgehend 01. 10 Minuten ohne Warnung oder Fehler.",
+  "steps": [
+    {
+      "command": "RegisterNotification [03] (0495/0007)",
+      "tx": "FF 03 00 01 04 95 00 07 03",
+      "rx": "FF 03 00 00 04 95 01 07",
+      "decoder": "empty",
+      "expected": ""
+    },
+    {
+      "command": "RegisterNotification [0D] (0495/0007)",
+      "tx": "FF 03 00 01 04 95 00 07 0D",
+      "rx": "FF 03 00 00 04 95 01 07",
+      "decoder": "empty",
+      "expected": ""
+    },
+    {
+      "command": "RegisterNotification [08] (0495/0007)",
+      "tx": "FF 03 00 01 04 95 00 07 08",
+      "rx": "FF 03 00 00 04 95 01 07",
+      "decoder": "empty",
+      "expected": ""
+    },
+    {
+      "command": "RegisterNotification [0A] (0495/0007)",
+      "tx": "FF 03 00 01 04 95 00 07 0A",
+      "rx": "FF 03 00 00 04 95 01 07",
+      "decoder": "empty",
+      "expected": ""
+    }
+  ],
+  "notifications": [
+    {
+      "id": "0495/0682",
+      "rx": "FF 03 00 01 04 95 06 82 00",
+      "decoder": "switch",
+      "expected": "False",
+      "note": "Dump nach Anmeldung Feature 3: Laden 00 = lädt nicht (laut [DS]: 01 Kabel an, 00 ab)"
+    },
+    {
+      "id": "0495/0683",
+      "rx": "FF 03 00 01 04 95 06 83 64",
+      "decoder": "battery",
+      "expected": "100",
+      "note": "Dump nach Anmeldung Feature 3"
+    },
+    {
+      "id": "0495/1A85",
+      "rx": "FF 03 00 01 04 95 1A 85 01",
+      "decoder": "ancEnabled",
+      "expected": "True",
+      "note": "Dump nach Anmeldung Feature 13"
+    },
+    {
+      "id": "0495/1A81",
+      "rx": "FF 03 00 06 04 95 1A 81 01 01 02 00 03 00",
+      "decoder": "ancModes",
+      "expected": "AntiWind=Maximum, Comfort=0, Adaptive=False",
+      "note": "Dump nach Anmeldung Feature 13"
+    },
+    {
+      "id": "0495/1A83",
+      "rx": "FF 03 00 01 04 95 1A 83 64",
+      "decoder": "ancLevel",
+      "expected": "100",
+      "note": "Dump nach Anmeldung Feature 13"
+    },
+    {
+      "id": "0495/1082",
+      "rx": "FF 03 00 05 04 95 10 82 3C 3C 16 16 00",
+      "decoder": "eqAllGains",
+      "expected": "6.0 6.0 2.2 2.2 0.0",
+      "note": "Dump nach Anmeldung Feature 8: alle Gains, Format wie 0x1003"
+    },
+    {
+      "id": "0495/1089",
+      "rx": "FF 03 00 01 04 95 10 89 01",
+      "decoder": "switch",
+      "expected": "True",
+      "note": "Dump Feature 8: Bass Boost (0x1009 + 0x80)"
+    },
+    {
+      "id": "0495/1091",
+      "rx": "FF 03 00 0F 04 95 10 91 00 00 00 01 00 00 02 00 00 03 00 00 04 00 00",
+      "decoder": "bandU16List",
+      "expected": "0 0 0 0 0",
+      "note": "Dump Feature 8: zu 0x1011 (Bedeutung unbekannt), [band, u16] je Band"
+    },
+    {
+      "id": "0495/108B",
+      "rx": "FF 03 00 0F 04 95 10 8B 00 00 5A 01 01 45 02 05 DC 03 19 64 04 19 64",
+      "decoder": "bandU16List",
+      "expected": "90 325 1500 6500 6500",
+      "note": "Dump Feature 8: Frequenzen (0x100B + 0x80), [band, Hz u16] je Band"
+    },
+    {
+      "id": "0495/108D",
+      "rx": "FF 03 00 0F 04 95 10 8D 00 08 00 01 0B 5C 02 0B 5C 03 0B 5C 04 0B 5C",
+      "decoder": "bandU16List",
+      "expected": "2048 2908 2908 2908 2908",
+      "note": "Dump Feature 8: Güte (0x100D + 0x80), wie von [DS] beschrieben"
+    },
+    {
+      "id": "0495/1093",
+      "rx": "FF 03 00 02 04 95 10 93 00 00",
+      "decoder": "raw",
+      "expected": "00 00",
+      "note": "Dump Feature 8: zu 0x1013 (Bedeutung unbekannt)"
+    },
+    {
+      "id": "0495/108F",
+      "rx": "FF 03 00 0A 04 95 10 8F 00 0E 01 0E 02 0E 03 0E 04 0E",
+      "decoder": "bandU8List",
+      "expected": "14 14 14 14 14",
+      "note": "Dump Feature 8: Filtertyp (0x100F + 0x80)"
+    },
+    {
+      "id": "0495/148B",
+      "rx": "FF 03 00 06 04 95 14 8B 00 00 00 00 00 00",
+      "decoder": "raw",
+      "expected": "00 00 00 00 00 00",
+      "note": "Feature 10, etwa 182 s nach Start, Auslöser unbekannt; zu 0x140B ([DS]: liefert 6 Nullbytes, Bedeutung unbekannt)"
+    },
+    {
+      "id": "0495/1A83",
+      "rx": "FF 03 00 01 04 95 1A 83 00",
+      "decoder": "ancLevel",
+      "expected": "0",
+      "note": "Touch-Geste am Headset (431.5 s nach Start): Pegel 0"
+    },
+    {
+      "id": "0495/1A83",
+      "rx": "FF 03 00 01 04 95 1A 83 64",
+      "decoder": "ancLevel",
+      "expected": "100",
+      "note": "Touch-Geste am Headset (440.7 s nach Start): Pegel 100"
+    },
+    {
+      "id": "0495/1A83",
+      "rx": "FF 03 00 01 04 95 1A 83 00",
+      "decoder": "ancLevel",
+      "expected": "0",
+      "note": "Touch-Geste am Headset (446.6 s nach Start): Pegel 0"
+    },
+    {
+      "id": "0495/1A83",
+      "rx": "FF 03 00 01 04 95 1A 83 64",
+      "decoder": "ancLevel",
+      "expected": "100",
+      "note": "Touch-Geste am Headset (449.2 s nach Start): Pegel 100"
+    }
+  ]
+}

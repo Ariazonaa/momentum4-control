@@ -1,0 +1,150 @@
+{
+  "title": "On-Head-Erkennung, Smart Pause, Anrufe automatisch annehmen und Comfort Call schreiben",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc set onhead|smartpause|autoanswer|comfortcall … --features 3,13,8,10,12,2,4 (04:01), je einmal umschalten und sofort zurück; der User trug das Headset",
+  "reference": "docs/protocol.md §6.1, §6.3, §8, §12; Rohdaten poc-20260919.log",
+  "anonymized": true,
+  "context": "Ausgangszustand wie in Stufe 4: On-Head an, Smart Pause aus, Auto-Answer aus, Comfort Call an. Jeder Setter antwortet mit einer leeren Response, das Rücklesen zeigt den neuen Wert, die anderen drei Werte bleiben unverändert (auch Smart Pause und Auto-Answer bei On-Head aus). Keine Notification, obwohl zusätzlich Feature 2 und 4 angemeldet waren (bestätigt [DS]). Am Ende war der Ausgangszustand wiederhergestellt. Nebenbefund: Nach der Anmeldung von Feature 2 schickt das Headset 0x0502 [03] als Response-Frame ohne Request (Tragezustand 3 = aufgesetzt); die Anmeldung von Feature 4 liefert einen Dump mit 0x0880 [05], 0x089A [00 00 BB 80] (48000), 0x0898 [00] und 0x0884 [00 01].",
+  "steps": [
+    {
+      "command": "SetOnHeadDetection [00] (0495/0400)",
+      "tx": "FF 03 00 01 04 95 04 00 00",
+      "rx": "FF 03 00 00 04 95 05 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "04:01:21.907 On-Head-Erkennung an → aus"
+    },
+    {
+      "command": "GetOnHeadDetection (0495/0401)",
+      "tx": "FF 03 00 00 04 95 04 01",
+      "rx": "FF 03 00 01 04 95 05 01 00",
+      "decoder": "switch",
+      "expected": "False",
+      "note": "Rücklesen bestätigt; die anderen drei Werte blieben unverändert"
+    },
+    {
+      "command": "SetOnHeadDetection [01] (0495/0400)",
+      "tx": "FF 03 00 01 04 95 04 00 01",
+      "rx": "FF 03 00 00 04 95 05 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "04:01:26.335 On-Head-Erkennung zurück auf an"
+    },
+    {
+      "command": "GetOnHeadDetection (0495/0401)",
+      "tx": "FF 03 00 00 04 95 04 01",
+      "rx": "FF 03 00 01 04 95 05 01 01",
+      "decoder": "switch",
+      "expected": "True",
+      "note": "Rücklesen bestätigt; die anderen drei Werte blieben unverändert"
+    },
+    {
+      "command": "SetSmartPause [01] (0495/080C)",
+      "tx": "FF 03 00 01 04 95 08 0C 01",
+      "rx": "FF 03 00 00 04 95 09 0C",
+      "decoder": "empty",
+      "expected": "",
+      "note": "04:01:30.759 Smart Pause aus → an"
+    },
+    {
+      "command": "GetSmartPause (0495/080D)",
+      "tx": "FF 03 00 00 04 95 08 0D",
+      "rx": "FF 03 00 01 04 95 09 0D 01",
+      "decoder": "switch",
+      "expected": "True",
+      "note": "Rücklesen bestätigt; die anderen drei Werte blieben unverändert"
+    },
+    {
+      "command": "SetSmartPause [00] (0495/080C)",
+      "tx": "FF 03 00 01 04 95 08 0C 00",
+      "rx": "FF 03 00 00 04 95 09 0C",
+      "decoder": "empty",
+      "expected": "",
+      "note": "04:01:35.130 Smart Pause zurück auf aus"
+    },
+    {
+      "command": "GetSmartPause (0495/080D)",
+      "tx": "FF 03 00 00 04 95 08 0D",
+      "rx": "FF 03 00 01 04 95 09 0D 00",
+      "decoder": "switch",
+      "expected": "False",
+      "note": "Rücklesen bestätigt; die anderen drei Werte blieben unverändert"
+    },
+    {
+      "command": "SetAutoAnswer [01] (0495/080A)",
+      "tx": "FF 03 00 01 04 95 08 0A 01",
+      "rx": "FF 03 00 00 04 95 09 0A",
+      "decoder": "empty",
+      "expected": "",
+      "note": "04:01:39.475 Anrufe automatisch annehmen aus → an"
+    },
+    {
+      "command": "GetAutoAnswer (0495/080B)",
+      "tx": "FF 03 00 00 04 95 08 0B",
+      "rx": "FF 03 00 01 04 95 09 0B 01",
+      "decoder": "switch",
+      "expected": "True",
+      "note": "Rücklesen bestätigt; die anderen drei Werte blieben unverändert"
+    },
+    {
+      "command": "SetAutoAnswer [00] (0495/080A)",
+      "tx": "FF 03 00 01 04 95 08 0A 00",
+      "rx": "FF 03 00 00 04 95 09 0A",
+      "decoder": "empty",
+      "expected": "",
+      "note": "04:01:43.966 Anrufe automatisch annehmen zurück auf aus"
+    },
+    {
+      "command": "GetAutoAnswer (0495/080B)",
+      "tx": "FF 03 00 00 04 95 08 0B",
+      "rx": "FF 03 00 01 04 95 09 0B 00",
+      "decoder": "switch",
+      "expected": "False",
+      "note": "Rücklesen bestätigt; die anderen drei Werte blieben unverändert"
+    },
+    {
+      "command": "SetComfortCall [00] (0495/0814)",
+      "tx": "FF 03 00 01 04 95 08 14 00",
+      "rx": "FF 03 00 00 04 95 09 14",
+      "decoder": "empty",
+      "expected": "",
+      "note": "04:01:48.395 Comfort Call an → aus"
+    },
+    {
+      "command": "GetComfortCall (0495/0815)",
+      "tx": "FF 03 00 00 04 95 08 15",
+      "rx": "FF 03 00 01 04 95 09 15 00",
+      "decoder": "switch",
+      "expected": "False",
+      "note": "Rücklesen bestätigt; die anderen drei Werte blieben unverändert"
+    },
+    {
+      "command": "SetComfortCall [01] (0495/0814)",
+      "tx": "FF 03 00 01 04 95 08 14 01",
+      "rx": "FF 03 00 00 04 95 09 14",
+      "decoder": "empty",
+      "expected": "",
+      "note": "04:01:52.807 Comfort Call zurück auf an"
+    },
+    {
+      "command": "GetComfortCall (0495/0815)",
+      "tx": "FF 03 00 00 04 95 08 15",
+      "rx": "FF 03 00 01 04 95 09 15 01",
+      "decoder": "switch",
+      "expected": "True",
+      "note": "Rücklesen bestätigt; die anderen drei Werte blieben unverändert"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "0495/0884",
+      "rx": "FF 03 00 02 04 95 08 84 00 01",
+      "decoder": "soundMode",
+      "expected": "Equalizer",
+      "note": "Dump nach der Anmeldung von Feature 4: Sound-Mode Equalizer"
+    }
+  ]
+}

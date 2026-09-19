@@ -1,0 +1,45 @@
+{
+  "title": "Töne & Sprachansagen: Prompt-Modus und Sprache lesen",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc state (05:16), nur lesend",
+  "reference": "docs/protocol.md §6.3; Rohdaten poc-20260919.log, state-20260919-051617-idx0.json",
+  "anonymized": true,
+  "context": "Klärung des Widerspruchs m4.json ↔ [DS]: Alle vier Getter antworten im Format aus m4.json. Prompt-Modus 2 (Töne und Stimme), Sprache 1 (DE), installiert nur DE, Sprachpaket-Version 3.37.3 = Firmware-Version. [DS] hatte 0x0802 nie gelesen. Keine Notification.",
+  "steps": [
+    {
+      "command": "GetAudioPromptMode (0495/0802)",
+      "tx": "FF 03 00 00 04 95 08 02",
+      "rx": "FF 03 00 01 04 95 09 02 02",
+      "decoder": "audioPromptMode",
+      "expected": "TonesAndVoice",
+      "note": "05:16:15 Töne und Stimme"
+    },
+    {
+      "command": "GetPromptLanguage (0495/0807)",
+      "tx": "FF 03 00 00 04 95 08 07",
+      "rx": "FF 03 00 01 04 95 09 07 01",
+      "decoder": "raw",
+      "expected": "01",
+      "note": "1 = DE laut m4.json; der User hört deutsche Ansagen"
+    },
+    {
+      "command": "GetAvailablePromptLanguages (0495/0808)",
+      "tx": "FF 03 00 00 04 95 08 08",
+      "rx": "FF 03 00 01 04 95 09 08 01",
+      "decoder": "raw",
+      "expected": "01",
+      "note": "nur DE installiert"
+    },
+    {
+      "command": "GetPromptLanguageVersions [00] (0495/0809)",
+      "tx": "FF 03 00 01 04 95 08 09 00",
+      "rx": "FF 03 00 05 04 95 09 09 01 01 03 25 03",
+      "decoder": "raw",
+      "expected": "01 01 03 25 03",
+      "note": "aktiv 1; Eintrag: Sprache 01 (DE), Version 3.37.3 wie die Firmware"
+    }
+  ]
+}

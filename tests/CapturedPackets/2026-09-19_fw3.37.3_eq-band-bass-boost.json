@@ -1,0 +1,91 @@
+{
+  "title": "Phase F: EQ-Band und Bass Boost schreiben",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc set eq 4:1 und 4:0 (00:59), set bass off (01:01), set bass on (01:02); der User trug das Headset und hörte Musik",
+  "reference": "docs/protocol.md §6.4, §8, §12; Rohdaten poc-20260919.log",
+  "anonymized": true,
+  "context": "Ausgangszustand: EQ +6,0 / +6,0 / +2,2 / +2,2 / 0 dB, Bass Boost an, Sound-Mode Equalizer. 0x1001 [04 0A] setzt Band 4 (6500 Hz) auf +1,0 dB; das Headset meldet die ganze Kurve sofort per 0x1082. 0x1008 [00] schaltet Bass Boost aus, Notification 0x1089 [00]; der User hörte, dass der Bass weniger wurde. Danach war der Ausgangszustand vollständig wiederhergestellt. Beide Setter antworten mit einer leeren Response.",
+  "steps": [
+    {
+      "command": "SetEqBand [04 0A] (0495/1001)",
+      "tx": "FF 03 00 02 04 95 10 01 04 0A",
+      "rx": "FF 03 00 00 04 95 11 01",
+      "decoder": "empty",
+      "expected": "",
+      "note": "00:59:15 Band 4 (6500 Hz) 0 → +1,0 dB"
+    },
+    {
+      "command": "GetEqAllGains [00] (0495/1003)",
+      "tx": "FF 03 00 01 04 95 10 03 00",
+      "rx": "FF 03 00 05 04 95 11 03 3C 3C 16 16 0A",
+      "decoder": "eqAllGains",
+      "expected": "6.0 6.0 2.2 2.2 1.0",
+      "note": "Rücklesen: nur Band 4 geändert"
+    },
+    {
+      "command": "SetEqBand [04 00] (0495/1001)",
+      "tx": "FF 03 00 02 04 95 10 01 04 00",
+      "rx": "FF 03 00 00 04 95 11 01",
+      "decoder": "empty",
+      "expected": "",
+      "note": "00:59:19 Band 4 zurück auf 0 dB"
+    },
+    {
+      "command": "SetBassBoost [00] (0495/1008)",
+      "tx": "FF 03 00 01 04 95 10 08 00",
+      "rx": "FF 03 00 00 04 95 11 08",
+      "decoder": "empty",
+      "expected": "",
+      "note": "01:01:17 Bass Boost aus; laut User ist der Bass „m. E. aus“"
+    },
+    {
+      "command": "GetBassBoost (0495/1009)",
+      "tx": "FF 03 00 00 04 95 10 09",
+      "rx": "FF 03 00 01 04 95 11 09 00",
+      "decoder": "switch",
+      "expected": "False",
+      "note": "Rücklesen nach Bass Boost aus"
+    },
+    {
+      "command": "SetBassBoost [01] (0495/1008)",
+      "tx": "FF 03 00 01 04 95 10 08 01",
+      "rx": "FF 03 00 00 04 95 11 08",
+      "decoder": "empty",
+      "expected": "",
+      "note": "01:02:35 Bass Boost wieder an – Ausgangszustand"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "0495/1082",
+      "rx": "FF 03 00 05 04 95 10 82 3C 3C 16 16 0A",
+      "decoder": "eqAllGains",
+      "expected": "6.0 6.0 2.2 2.2 1.0",
+      "note": "00:59:15.365, 3 ms nach dem Rücklese-Request – Änderungs-Notification von 0x1001 mit der ganzen Kurve"
+    },
+    {
+      "id": "0495/1082",
+      "rx": "FF 03 00 05 04 95 10 82 3C 3C 16 16 00",
+      "decoder": "eqAllGains",
+      "expected": "6.0 6.0 2.2 2.2 0.0",
+      "note": "00:59:19.638 nach dem Zurücksetzen"
+    },
+    {
+      "id": "0495/1089",
+      "rx": "FF 03 00 01 04 95 10 89 00",
+      "decoder": "switch",
+      "expected": "False",
+      "note": "01:01:17.340 nach Bass Boost aus"
+    },
+    {
+      "id": "0495/1089",
+      "rx": "FF 03 00 01 04 95 10 89 01",
+      "decoder": "switch",
+      "expected": "True",
+      "note": "01:02:35.950 nach Bass Boost an"
+    }
+  ]
+}

@@ -1,0 +1,248 @@
+{
+  "title": "Hardware-Stufe 4: gesamten Zustand lesen",
+  "date": "2026-09-18",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "nur Getter aus docs/protocol.md §12 Stufe 4, nacheinander über die GaiaCommandQueue (m4poc state)",
+  "reference": "docs/protocol.md §6; Rohdaten m4poc state 2026-09-18 23:26",
+  "anonymized": true,
+  "context": "Zum Zeitpunkt des Mitschnitts lief Musik (A2DP über Alternative A2DP Driver); nur dieser PC war mit dem Headset verbunden. Alle Antworten kamen als Response (cmd + 0x0100), keine Errors, keine Notifications.",
+  "steps": [
+    {
+      "command": "GetAncEnabled (0495/1A05)",
+      "tx": "FF 03 00 00 04 95 1A 05",
+      "rx": "FF 03 00 01 04 95 1B 05 01",
+      "decoder": "ancEnabled",
+      "expected": "True"
+    },
+    {
+      "command": "GetAncModes (0495/1A01)",
+      "tx": "FF 03 00 00 04 95 1A 01",
+      "rx": "FF 03 00 06 04 95 1B 01 01 01 02 00 03 00",
+      "decoder": "ancModes",
+      "expected": "AntiWind=Maximum, Comfort=0, Adaptive=False"
+    },
+    {
+      "command": "GetAncLevel (0495/1A03)",
+      "tx": "FF 03 00 00 04 95 1A 03",
+      "rx": "FF 03 00 01 04 95 1B 03 64",
+      "decoder": "ancLevel",
+      "expected": "100"
+    },
+    {
+      "command": "GetTransparentHearingStatus (0495/1805)",
+      "tx": "FF 03 00 00 04 95 18 05",
+      "rx": "FF 03 00 01 04 95 19 05 01",
+      "decoder": "switch",
+      "expected": "True"
+    },
+    {
+      "command": "GetSoundMode (0495/0804)",
+      "tx": "FF 03 00 00 04 95 08 04",
+      "rx": "FF 03 00 02 04 95 09 04 00 01",
+      "decoder": "soundMode",
+      "expected": "Equalizer"
+    },
+    {
+      "command": "GetBtCompatibilityMode (0495/0406)",
+      "tx": "FF 03 00 00 04 95 04 06",
+      "rx": "FF 03 00 01 04 95 05 06 01",
+      "decoder": "btCompatibilityMode",
+      "expected": "BetterCompatibility"
+    },
+    {
+      "command": "GetPersonalizationState (0495/2001)",
+      "tx": "FF 03 00 00 04 95 20 01",
+      "rx": "FF 03 00 01 04 95 21 01 00",
+      "decoder": "personalizationState",
+      "expected": "NotParameterized"
+    },
+    {
+      "command": "GetEqConfig (0495/1000)",
+      "tx": "FF 03 00 00 04 95 10 00",
+      "rx": "FF 03 00 05 04 95 11 00 05 C4 3C 00 00",
+      "decoder": "eqConfig",
+      "expected": "5 bands, -6.0..6.0 dB, extra [00 00]"
+    },
+    {
+      "command": "GetEqBand (0495/1002)",
+      "tx": "FF 03 00 01 04 95 10 02 00",
+      "rx": "FF 03 00 01 04 95 11 02 3C",
+      "decoder": "eqBandGain",
+      "expected": "6.0"
+    },
+    {
+      "command": "GetEqBand (0495/1002)",
+      "tx": "FF 03 00 01 04 95 10 02 01",
+      "rx": "FF 03 00 01 04 95 11 02 3C",
+      "decoder": "eqBandGain",
+      "expected": "6.0"
+    },
+    {
+      "command": "GetEqBand (0495/1002)",
+      "tx": "FF 03 00 01 04 95 10 02 02",
+      "rx": "FF 03 00 01 04 95 11 02 16",
+      "decoder": "eqBandGain",
+      "expected": "2.2"
+    },
+    {
+      "command": "GetEqBand (0495/1002)",
+      "tx": "FF 03 00 01 04 95 10 02 03",
+      "rx": "FF 03 00 01 04 95 11 02 16",
+      "decoder": "eqBandGain",
+      "expected": "2.2"
+    },
+    {
+      "command": "GetEqBand (0495/1002)",
+      "tx": "FF 03 00 01 04 95 10 02 04",
+      "rx": "FF 03 00 01 04 95 11 02 00",
+      "decoder": "eqBandGain",
+      "expected": "0.0"
+    },
+    {
+      "command": "GetEqAllGains (0495/1003)",
+      "tx": "FF 03 00 01 04 95 10 03 00",
+      "rx": "FF 03 00 05 04 95 11 03 3C 3C 16 16 00",
+      "decoder": "eqAllGains",
+      "expected": "6.0 6.0 2.2 2.2 0.0"
+    },
+    {
+      "command": "GetEqBandFrequency (0495/100B)",
+      "tx": "FF 03 00 01 04 95 10 0B 00",
+      "rx": "FF 03 00 03 04 95 11 0B 00 00 5A",
+      "decoder": "eqBandFrequency",
+      "expected": "90"
+    },
+    {
+      "command": "GetEqBandFrequency (0495/100B)",
+      "tx": "FF 03 00 01 04 95 10 0B 01",
+      "rx": "FF 03 00 03 04 95 11 0B 01 01 45",
+      "decoder": "eqBandFrequency",
+      "expected": "325"
+    },
+    {
+      "command": "GetEqBandFrequency (0495/100B)",
+      "tx": "FF 03 00 01 04 95 10 0B 02",
+      "rx": "FF 03 00 03 04 95 11 0B 02 05 DC",
+      "decoder": "eqBandFrequency",
+      "expected": "1500"
+    },
+    {
+      "command": "GetEqBandFrequency (0495/100B)",
+      "tx": "FF 03 00 01 04 95 10 0B 03",
+      "rx": "FF 03 00 03 04 95 11 0B 03 19 64",
+      "decoder": "eqBandFrequency",
+      "expected": "6500"
+    },
+    {
+      "command": "GetEqBandFrequency (0495/100B)",
+      "tx": "FF 03 00 01 04 95 10 0B 04",
+      "rx": "FF 03 00 03 04 95 11 0B 04 19 64",
+      "decoder": "eqBandFrequency",
+      "expected": "6500"
+    },
+    {
+      "command": "GetBassBoost (0495/1009)",
+      "tx": "FF 03 00 00 04 95 10 09",
+      "rx": "FF 03 00 01 04 95 11 09 01",
+      "decoder": "switch",
+      "expected": "True"
+    },
+    {
+      "command": "GetPairedDeviceCount (0495/1400)",
+      "tx": "FF 03 00 00 04 95 14 00",
+      "rx": "FF 03 00 02 04 95 15 00 00 04",
+      "decoder": "pairedDeviceCount",
+      "expected": "4"
+    },
+    {
+      "command": "GetPairedDeviceInfo (0495/1401)",
+      "tx": "FF 03 00 01 04 95 14 01 00",
+      "rx": "FF 03 00 08 04 95 15 01 00 00 01 50 43 2D 41 00",
+      "decoder": "pairedDeviceEntry",
+      "expected": "#0 'PC-A' prio 0 status 1",
+      "note": "Name anonymisiert (Original 7 Zeichen), Längenbyte angepasst; Eintrag 0 ist dieser PC"
+    },
+    {
+      "command": "GetPairedDeviceInfo (0495/1401)",
+      "tx": "FF 03 00 01 04 95 14 01 01",
+      "rx": "FF 03 00 0C 04 95 15 01 01 01 00 4C 61 70 74 6F 70 2D 42 00",
+      "decoder": "pairedDeviceEntry",
+      "expected": "#1 'Laptop-B' prio 1 status 0",
+      "note": "Name anonymisiert (Original 17 Zeichen), Längenbyte angepasst"
+    },
+    {
+      "command": "GetPairedDeviceInfo (0495/1401)",
+      "tx": "FF 03 00 01 04 95 14 01 02",
+      "rx": "FF 03 00 0B 04 95 15 01 02 02 00 50 68 6F 6E 65 2D 43 00",
+      "decoder": "pairedDeviceEntry",
+      "expected": "#2 'Phone-C' prio 2 status 0",
+      "note": "Name anonymisiert (Original 6 Zeichen), Längenbyte angepasst"
+    },
+    {
+      "command": "GetPairedDeviceInfo (0495/1401)",
+      "tx": "FF 03 00 01 04 95 14 01 03",
+      "rx": "FF 03 00 08 04 95 15 01 03 03 00 50 43 2D 44 00",
+      "decoder": "pairedDeviceEntry",
+      "expected": "#3 'PC-D' prio 3 status 0",
+      "note": "Name anonymisiert (Original 15 Zeichen), Längenbyte angepasst"
+    },
+    {
+      "command": "GetOwnDeviceIndex (0495/1407)",
+      "tx": "FF 03 00 00 04 95 14 07",
+      "rx": "FF 03 00 01 04 95 15 07 00",
+      "decoder": "ownDeviceIndex",
+      "expected": "0"
+    },
+    {
+      "command": "GetMaxConnections (0495/1409)",
+      "tx": "FF 03 00 00 04 95 14 09",
+      "rx": "FF 03 00 01 04 95 15 09 02",
+      "decoder": "maxConnections",
+      "expected": "2"
+    },
+    {
+      "command": "GetOnHeadDetection (0495/0401)",
+      "tx": "FF 03 00 00 04 95 04 01",
+      "rx": "FF 03 00 01 04 95 05 01 01",
+      "decoder": "switch",
+      "expected": "True"
+    },
+    {
+      "command": "GetAutoAnswer (0495/080B)",
+      "tx": "FF 03 00 00 04 95 08 0B",
+      "rx": "FF 03 00 01 04 95 09 0B 00",
+      "decoder": "switch",
+      "expected": "False"
+    },
+    {
+      "command": "GetSmartPause (0495/080D)",
+      "tx": "FF 03 00 00 04 95 08 0D",
+      "rx": "FF 03 00 01 04 95 09 0D 00",
+      "decoder": "switch",
+      "expected": "False"
+    },
+    {
+      "command": "GetComfortCall (0495/0815)",
+      "tx": "FF 03 00 00 04 95 08 15",
+      "rx": "FF 03 00 01 04 95 09 15 01",
+      "decoder": "switch",
+      "expected": "True"
+    },
+    {
+      "command": "GetTouchLock (0495/1607)",
+      "tx": "FF 03 00 00 04 95 16 07",
+      "rx": "FF 03 00 01 04 95 17 07 00",
+      "decoder": "switch",
+      "expected": "False"
+    },
+    {
+      "command": "GetTimer (0495/0601)",
+      "tx": "FF 03 00 01 04 95 06 01 00",
+      "rx": "FF 03 00 03 04 95 07 01 00 03 84",
+      "decoder": "timerSeconds",
+      "expected": "900"
+    }
+  ]
+}

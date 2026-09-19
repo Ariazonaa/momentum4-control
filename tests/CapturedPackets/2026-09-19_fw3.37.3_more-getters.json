@@ -1,0 +1,37 @@
+{
+  "title": "Weitere Getter aus m4.json: Ladezustand, Transparent-Hearing-Modus, Transparent Hearing _TW",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc state (05:33), nur lesend; Headset nicht am Kabel, Transparent Hearing an (ANC an, Pegel 100)",
+  "reference": "docs/protocol.md §6.2, §6.8; Rohdaten poc-20260919.log, state-20260919-053339-idx0.json",
+  "anonymized": true,
+  "context": "0x0602 antwortet mit 2 Byte (m4.json: left earbud + wiederholbar right earbud); das erste Byte 0 = nicht angeschlossen passt zum Push 0x0682 [00]. 0x1801 = 0, laut m4.json-Beschreibung „keep music playing“. 0x1803 = 100 – gleich dem Pegel (0x1A03) bei eingeschaltetem Transparent Hearing, Bedeutung offen. Keine Notification.",
+  "steps": [
+    {
+      "command": "GetChargingState (0495/0602)",
+      "tx": "FF 03 00 00 04 95 06 02",
+      "rx": "FF 03 00 02 04 95 07 02 00 00",
+      "decoder": "raw",
+      "expected": "00 00",
+      "note": "nicht angeschlossen; zweites Byte laut m4.json für ein zweites Earbud"
+    },
+    {
+      "command": "GetTransparentHearingMode (0495/1801)",
+      "tx": "FF 03 00 00 04 95 18 01",
+      "rx": "FF 03 00 01 04 95 19 01 00",
+      "decoder": "raw",
+      "expected": "00",
+      "note": "0 = laut m4.json „keep music playing“"
+    },
+    {
+      "command": "GetTransparentHearingTw (0495/1803)",
+      "tx": "FF 03 00 00 04 95 18 03",
+      "rx": "FF 03 00 01 04 95 19 03 64",
+      "decoder": "raw",
+      "expected": "64",
+      "note": "100, gleich dem Pegel bei Transparent Hearing an; Bedeutung offen"
+    }
+  ]
+}

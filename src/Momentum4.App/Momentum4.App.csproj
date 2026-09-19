@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>$(M4WindowsTargetFramework)</TargetFramework>
+    <TargetPlatformMinVersion>$(M4MinWindowsVersion)</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>$(M4MinWindowsVersion)</SupportedOSPlatformVersion>
+    <RootNamespace>Momentum4.App</RootNamespace>
+    <AssemblyName>Momentum4Control</AssemblyName>
+    <Description>Windows-Oberfläche (WinUI 3) für den MOMENTUM 4 – inoffiziell, komplett lokal.</Description>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\App.ico</ApplicationIcon>
+
+    <!-- docs/architecture.md §7: unpackaged, self-contained, x64 -->
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- erzeugt und veröffentlicht Momentum4Control.pri (kompiliertes XAML) auch ohne MSIX-Paket -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <!-- Native AOT beim Veröffentlichen (tools/publish-app.ps1): weniger Speicher, kein JIT (architecture.md §1 Punkt 8) -->
+    <PublishAot>true</PublishAot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Momentum4.Bluetooth\Momentum4.Bluetooth.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Icons werden zur Laufzeit geladen (Tray, Fenster); erzeugt mit tools/make-icons.py -->
+    <Content Include="Assets\*.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,123 @@
+{
+  "title": "Tragezustand lesen, Touch-Sperre an und aus, Sound-Mode Podcast und zurück",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc state (04:14:04), dann m4poc set touch off|on und set soundmode podcast|eq, jeweils mit --features 3,13,8,10,12,11 (04:14:07–04:14:22); der User trug das Headset",
+  "reference": "docs/protocol.md §6.1, §6.3, §6.7, §8, §12; Rohdaten poc-20260919.log, state-20260919-041407-idx0.json",
+  "anonymized": true,
+  "context": "Tragezustand 0x0402 → [03] = aufgesetzt (der User trug das Headset). Die Anmeldung von Feature 11 wird bestätigt, ohne Dump. 0x1606 [01] sperrt Touch, das Headset meldet das 20 ms später mit 0x1687 [01] (gleiches Format wie 0x1607, invertiert: 1 = gesperrt); 0x1606 [00] hebt die Sperre auf, 0x1687 [00]. Sound-Mode 0x0803 [00 02] (Podcast) wird übernommen und per 0x0884 [00 02] gemeldet, obwohl Feature 4 nicht angemeldet war; danach zurück auf Equalizer. Ausgangszustand danach wiederhergestellt.",
+  "steps": [
+    {
+      "command": "GetPhysicalState (0495/0402)",
+      "tx": "FF 03 00 00 04 95 04 02",
+      "rx": "FF 03 00 01 04 95 05 02 03",
+      "decoder": "wearState",
+      "expected": "Worn",
+      "note": "04:14:05 aufgesetzt"
+    },
+    {
+      "command": "RegisterNotification [0B] (0495/0007)",
+      "tx": "FF 03 00 01 04 95 00 07 0B",
+      "rx": "FF 03 00 00 04 95 01 07",
+      "decoder": "empty",
+      "expected": "",
+      "note": "04:14:07 Feature 11 (mmi) angemeldet, kein Dump"
+    },
+    {
+      "command": "SetTouchLock [01] (0495/1606)",
+      "tx": "FF 03 00 01 04 95 16 06 01",
+      "rx": "FF 03 00 00 04 95 17 06",
+      "decoder": "empty",
+      "expected": "",
+      "note": "04:14:08.329 Touch sperren"
+    },
+    {
+      "command": "GetTouchLock (0495/1607)",
+      "tx": "FF 03 00 00 04 95 16 07",
+      "rx": "FF 03 00 01 04 95 17 07 01",
+      "decoder": "switch",
+      "expected": "True",
+      "note": "Rücklesen: gesperrt"
+    },
+    {
+      "command": "SetTouchLock [00] (0495/1606)",
+      "tx": "FF 03 00 01 04 95 16 06 00",
+      "rx": "FF 03 00 00 04 95 17 06",
+      "decoder": "empty",
+      "expected": "",
+      "note": "04:14:12.846 Sperre aufheben"
+    },
+    {
+      "command": "GetTouchLock (0495/1607)",
+      "tx": "FF 03 00 00 04 95 16 07",
+      "rx": "FF 03 00 01 04 95 17 07 00",
+      "decoder": "switch",
+      "expected": "False",
+      "note": "Rücklesen: nicht gesperrt"
+    },
+    {
+      "command": "SetSoundMode [00 02] (0495/0803)",
+      "tx": "FF 03 00 02 04 95 08 03 00 02",
+      "rx": "FF 03 00 00 04 95 09 03",
+      "decoder": "empty",
+      "expected": "",
+      "note": "04:14:17.330 Podcast"
+    },
+    {
+      "command": "GetSoundMode (0495/0804)",
+      "tx": "FF 03 00 00 04 95 08 04",
+      "rx": "FF 03 00 02 04 95 09 04 00 02",
+      "decoder": "soundMode",
+      "expected": "Podcast",
+      "note": "Rücklesen: Podcast"
+    },
+    {
+      "command": "SetSoundMode [00 01] (0495/0803)",
+      "tx": "FF 03 00 02 04 95 08 03 00 01",
+      "rx": "FF 03 00 00 04 95 09 03",
+      "decoder": "empty",
+      "expected": "",
+      "note": "04:14:21.767 zurück auf Equalizer"
+    },
+    {
+      "command": "GetSoundMode (0495/0804)",
+      "tx": "FF 03 00 00 04 95 08 04",
+      "rx": "FF 03 00 02 04 95 09 04 00 01",
+      "decoder": "soundMode",
+      "expected": "Equalizer",
+      "note": "Rücklesen: Equalizer"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "0495/1687",
+      "rx": "FF 03 00 01 04 95 16 87 01",
+      "decoder": "switch",
+      "expected": "True",
+      "note": "04:14:08.359, 30 ms nach 0x1606 [01]: gesperrt"
+    },
+    {
+      "id": "0495/1687",
+      "rx": "FF 03 00 01 04 95 16 87 00",
+      "decoder": "switch",
+      "expected": "False",
+      "note": "04:14:12.886, 40 ms nach 0x1606 [00]: nicht gesperrt"
+    },
+    {
+      "id": "0495/0884",
+      "rx": "FF 03 00 02 04 95 08 84 00 02",
+      "decoder": "soundMode",
+      "expected": "Podcast",
+      "note": "04:14:17.426 nach 0x0803 [00 02], ohne Anmeldung von Feature 4"
+    },
+    {
+      "id": "0495/0884",
+      "rx": "FF 03 00 02 04 95 08 84 00 01",
+      "decoder": "soundMode",
+      "expected": "Equalizer",
+      "note": "04:14:21.905 nach 0x0803 [00 01]"
+    }
+  ]
+}

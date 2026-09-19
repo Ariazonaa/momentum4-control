@@ -1,0 +1,137 @@
+{
+  "title": "Hardware-Stufe 6–8 und Hörtest: ANC-Tabelle, Pegel, Transparent Hearing schreiben",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc stage6 (00:10), danach m4poc set level 100 / level 0 / th on (00:12–00:15); der User trug das Headset und beschrieb, was er hörte",
+  "reference": "docs/protocol.md §6.8, §6.9, §7.1, §12; Rohdaten poc-20260919.log und stage6-20260919-001040.json",
+  "anonymized": true,
+  "context": "Ergebnis: 0x1A00 wirkt als komplette Tabelle (6 Byte). Jedes Schreiben von 0x1A00 – auch mit unveränderten Werten – beendet Transparent Hearing (0x1805 → 0) und setzt den Pegel auf 0. 0x1804 [01] schaltet Transparent Hearing ein; das Headset setzt dabei den Pegel auf 100. Laut User ist das die gewohnte Transparenz. Pegel 100 und 0 bei ausgeschaltetem Transparent Hearing klangen beide nicht nach voller Transparenz. Alle Setter antworten mit einer leeren Response.",
+  "steps": [
+    {
+      "command": "GetTransparentHearingStatus (0495/1805)",
+      "tx": "FF 03 00 00 04 95 18 05",
+      "rx": "FF 03 00 01 04 95 19 05 01",
+      "decoder": "switch",
+      "expected": "True",
+      "note": "00:10:37 Ausgangszustand: Transparent Hearing an, Pegel 100, Anti-Wind Maximum, Custom"
+    },
+    {
+      "command": "SetAncMode [01 01 02 00 03 00] (0495/1A00)",
+      "tx": "FF 03 00 06 04 95 1A 00 01 01 02 00 03 00",
+      "rx": "FF 03 00 00 04 95 1B 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Vermeintlich idempotent (gleiche Tabelle): angenommen, aber mit Seiteneffekt – Transparent Hearing aus, Pegel 100 → 0 (siehe Notification und die folgenden Getter)"
+    },
+    {
+      "command": "GetAncLevel (0495/1A03)",
+      "tx": "FF 03 00 00 04 95 1A 03",
+      "rx": "FF 03 00 01 04 95 1B 03 00",
+      "decoder": "ancLevel",
+      "expected": "0",
+      "note": "nach dem 1A00-Schreiben"
+    },
+    {
+      "command": "GetTransparentHearingStatus (0495/1805)",
+      "tx": "FF 03 00 00 04 95 18 05",
+      "rx": "FF 03 00 01 04 95 19 05 00",
+      "decoder": "switch",
+      "expected": "False",
+      "note": "nach dem 1A00-Schreiben"
+    },
+    {
+      "command": "SetAncMode [01 01] (0495/1A00)",
+      "tx": "FF 03 00 02 04 95 1A 00 01 01",
+      "rx": "FF 03 00 00 04 95 1B 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Einzelpaar ([MC]/[SDC]-Format) mit unverändertem Wert: quittiert; ob das Format wirkt, ist damit nicht belegt"
+    },
+    {
+      "command": "SetAncMode [01 02 02 00 03 00] (0495/1A00)",
+      "tx": "FF 03 00 06 04 95 1A 00 01 02 02 00 03 00",
+      "rx": "FF 03 00 00 04 95 1B 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Anti-Wind → Automatisch als komplette Tabelle: übernommen (Rücklesen und Notification 0x1A81)"
+    },
+    {
+      "command": "GetAncModes (0495/1A01)",
+      "tx": "FF 03 00 00 04 95 1A 01",
+      "rx": "FF 03 00 06 04 95 1B 01 01 02 02 00 03 00",
+      "decoder": "ancModes",
+      "expected": "AntiWind=Automatic, Comfort=0, Adaptive=False"
+    },
+    {
+      "command": "SetAncMode [01 01 02 00 03 00] (0495/1A00)",
+      "tx": "FF 03 00 06 04 95 1A 00 01 01 02 00 03 00",
+      "rx": "FF 03 00 00 04 95 1B 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Anti-Wind zurück auf Maximum"
+    },
+    {
+      "command": "SetAncLevel [64] (0495/1A02)",
+      "tx": "FF 03 00 01 04 95 1A 02 64",
+      "rx": "FF 03 00 00 04 95 1B 02",
+      "decoder": "empty",
+      "expected": "",
+      "note": "00:12:36 Hörtest: Pegel 100 bei Transparent Hearing aus – der User hört „ANC ist noch an“"
+    },
+    {
+      "command": "SetAncLevel [00] (0495/1A02)",
+      "tx": "FF 03 00 01 04 95 1A 02 00",
+      "rx": "FF 03 00 00 04 95 1B 02",
+      "decoder": "empty",
+      "expected": "",
+      "note": "00:14:05 Hörtest: Pegel 0 bei Transparent Hearing aus – laut User „Umgebung nicht komplett laut wie sonst“"
+    },
+    {
+      "command": "SetTransparentHearingStatus [01] (0495/1804)",
+      "tx": "FF 03 00 01 04 95 18 04 01",
+      "rx": "FF 03 00 00 04 95 19 04",
+      "decoder": "empty",
+      "expected": "",
+      "note": "00:15:18 Transparent Hearing an: das Headset setzt den Pegel selbst auf 100 (Notification 0x1A83); laut User „wie sonst immer“"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "0495/1A83",
+      "rx": "FF 03 00 01 04 95 1A 83 00",
+      "decoder": "ancLevel",
+      "expected": "0",
+      "note": "00:10:37.467, 30 ms nach dem „idempotenten“ 1A00-Schreiben"
+    },
+    {
+      "id": "0495/1A81",
+      "rx": "FF 03 00 06 04 95 1A 81 01 02 02 00 03 00",
+      "decoder": "ancModes",
+      "expected": "AntiWind=Automatic, Comfort=0, Adaptive=False",
+      "note": "Änderungs-Notification nach Anti-Wind → Automatisch"
+    },
+    {
+      "id": "0495/1A81",
+      "rx": "FF 03 00 06 04 95 1A 81 01 01 02 00 03 00",
+      "decoder": "ancModes",
+      "expected": "AntiWind=Maximum, Comfort=0, Adaptive=False",
+      "note": "Änderungs-Notification nach dem Wiederherstellen"
+    },
+    {
+      "id": "0495/1A83",
+      "rx": "FF 03 00 01 04 95 1A 83 64",
+      "decoder": "ancLevel",
+      "expected": "100",
+      "note": "nach SetAncLevel [64] und ebenso nach SetTransparentHearingStatus [01]"
+    },
+    {
+      "id": "0495/1A83",
+      "rx": "FF 03 00 01 04 95 1A 83 00",
+      "decoder": "ancLevel",
+      "expected": "0",
+      "note": "nach SetAncLevel [00]"
+    }
+  ]
+}

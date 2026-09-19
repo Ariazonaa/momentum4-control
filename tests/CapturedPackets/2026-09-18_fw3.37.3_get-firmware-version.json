@@ -1,0 +1,15 @@
+{
+  "title": "Firmware-Version lesen",
+  "date": "2026-09-18",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0); auf Kanal 2 byte-gleich",
+  "action": "GET 0x0495/0x1201 (GetFirmwareVersion), Hardware-Stufe 2",
+  "reference": "docs/protocol.md §6.5; m4poc read",
+  "anonymized": true,
+  "exchange": [
+    { "dir": "TX", "hex": "FF 03 00 00 04 95 12 01" },
+    { "dir": "RX", "hex": "FF 03 00 06 04 95 13 01 00 03 00 25 00 03", "note": "3 × u16 big-endian: 3, 37, 3; ein Read, 17 ms" }
+  ],
+  "expected": { "decoder": "firmwareVersion", "value": "3.37.3" }
+}

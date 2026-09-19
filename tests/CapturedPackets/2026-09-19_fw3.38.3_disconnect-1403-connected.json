@@ -1,0 +1,78 @@
+{
+  "title": "0x1403 an einem VERBUNDENEN Gerät: trennt sauber, löscht die Kopplung nicht (FW 3.38.3)",
+  "date": "2026-09-19",
+  "firmware": "3.38.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc disc1403 1 (temporär entsperrt, mit ausdrücklicher Zustimmung des Users; Ziel = verbundenes iPhone, Platz 1). Das iPhone wurde direkt danach per 0x1402 wieder verbunden.",
+  "reference": "docs/protocol.md §6.6/§9/§10; Rohdaten poc-20260919.log (19:19:26–19:19:29)",
+  "anonymized": true,
+  "context": "Ergänzt den Wegwerf-Test an einem getrennten Gerät (2026-09-19_fw3.38.3_disconnect-1403.json) um den offenen Fall: 0x1403 an einem tatsächlich verbundenen Gerät. Der User gab das verbundene iPhone (Platz 1) frei. 0x1403 [01] antwortet mit 0x1503 leer OK; das iPhone wird getrennt (0x1401[1]-connected-Byte 01→00, 0x1404[1] 01→00, Notification 0x1484 [01 00]). Die Kopplung bleibt: Anzahl 4→4, Platz 1 weiter als „iPhone“ gelistet. Auf FW 3.38.3 also reines Trennen, kein Pairing-Verlust – auch bei einem verbundenen Gerät. [DS] sah auf FW 2.13.42 Pairing-Verlust → firmwareabhängig. 0x1403 wurde danach wieder auf Blocked gesetzt.",
+  "steps": [
+    {
+      "command": "GetPairedDeviceCount (0495/1400) vorher",
+      "tx": "FF 03 00 00 04 95 14 00",
+      "rx": "FF 03 00 02 04 95 15 00 00 04",
+      "decoder": "pairedDeviceCount",
+      "expected": "4",
+      "note": "vorher 4 gekoppelte Geräte"
+    },
+    {
+      "command": "GetPairedDeviceInfo [01] (0495/1401) vorher",
+      "tx": "FF 03 00 01 04 95 14 01 01",
+      "rx": "FF 03 00 0A 04 95 15 01 01 01 01 69 50 68 6F 6E 65 00",
+      "decoder": "pairedDeviceEntry",
+      "expected": "#1 'iPhone' prio 1 status 1",
+      "note": "Platz 1 = iPhone, connected-Byte 01 (verbunden)"
+    },
+    {
+      "command": "GetPairedDeviceStatus [01] (0495/1404) vorher",
+      "tx": "FF 03 00 01 04 95 14 04 01",
+      "rx": "FF 03 00 02 04 95 15 04 01 01",
+      "decoder": "raw",
+      "expected": "01 01",
+      "note": "[index, status]; status 01 = verbunden"
+    },
+    {
+      "command": "DisconnectPairedDevice [01] (0495/1403)",
+      "tx": "FF 03 00 01 04 95 14 03 01",
+      "rx": "FF 03 00 00 04 95 15 03",
+      "decoder": "empty",
+      "expected": "",
+      "note": "0x1503 leer OK, kein Fehler"
+    },
+    {
+      "command": "GetPairedDeviceCount (0495/1400) nachher",
+      "tx": "FF 03 00 00 04 95 14 00",
+      "rx": "FF 03 00 02 04 95 15 00 00 04",
+      "decoder": "pairedDeviceCount",
+      "expected": "4",
+      "note": "nachher weiterhin 4 – nichts gelöscht"
+    },
+    {
+      "command": "GetPairedDeviceInfo [01] (0495/1401) nachher",
+      "tx": "FF 03 00 01 04 95 14 01 01",
+      "rx": "FF 03 00 0A 04 95 15 01 01 01 00 69 50 68 6F 6E 65 00",
+      "decoder": "pairedDeviceEntry",
+      "expected": "#1 'iPhone' prio 1 status 0",
+      "note": "Platz 1 weiter iPhone, aber connected-Byte jetzt 00 – Kopplung erhalten, nur getrennt"
+    },
+    {
+      "command": "GetPairedDeviceStatus [01] (0495/1404) nachher",
+      "tx": "FF 03 00 01 04 95 14 04 01",
+      "rx": "FF 03 00 02 04 95 15 04 01 00",
+      "decoder": "raw",
+      "expected": "01 00",
+      "note": "status jetzt 00 = getrennt"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "0495/1484",
+      "rx": "FF 03 00 02 04 95 14 84 01 00",
+      "decoder": "raw",
+      "expected": "01 00",
+      "note": "Das Headset meldet die Trennung von Platz 1 ([index, status] = 01 00)"
+    }
+  ]
+}

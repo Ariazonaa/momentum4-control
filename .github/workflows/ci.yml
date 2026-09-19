@@ -1,0 +1,75 @@
+# Build and tests on GitHub-hosted runners.
+#   - linux:   Protocol and Core tests (net10.0, cross-platform) on ubuntu-latest.
+#   - windows: the full solution incl. the WinUI app and Bluetooth layer on windows-latest:
+#              all tests, format check, vulnerable-package check and the Native AOT build.
+# The release artifacts (setup.exe + portable.zip) are built by release.yml on a v* tag / dispatch.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  linux:
+    name: Tests Protocol + Core (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Protocol tests
+        run: dotnet test --project tests/Momentum4.Protocol.Tests/Momentum4.Protocol.Tests.csproj -c Release
+      - name: Core tests
+        run: dotnet test --project tests/Momentum4.Core.Tests/Momentum4.Core.Tests.csproj -c Release
+
+  windows:
+    name: Solution, Tests, AOT (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Build (Release, warnings are errors)
+        run: dotnet build Momentum4Control.slnx -c Release
+
+      - name: Tests (all projects)
+        run: dotnet test --solution Momentum4Control.slnx -c Release --no-build
+
+      - name: Format check
+        run: dotnet format Momentum4Control.slnx --verify-no-changes
+
+      - name: Vulnerable packages
+        shell: pwsh
+        run: |
+          $report = dotnet list Momentum4Control.slnx package --vulnerable --include-transitive 2>&1 | Out-String
+          Write-Output $report
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          if ($report -match 'has the following vulnerable packages') { throw 'Vulnerable NuGet packages found.' }
+
+      - name: Native AOT build
+        run: .\tools\publish-app.ps1 -Output "${{ github.workspace }}\publish\Momentum4Control"

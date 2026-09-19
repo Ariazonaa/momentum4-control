@@ -1,0 +1,107 @@
+{
+  "title": "Phase F: Sound-Mode umschalten und eine ganze EQ-Kurve (Preset) schreiben",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc set soundmode off (01:10) / eq (01:11), preset apply Voice (01:11:45) / Eigene (01:13); der User trug das Headset und hörte Musik",
+  "reference": "docs/protocol.md §6.3, §6.4, §7.2, §8, §12; Rohdaten poc-20260919.log",
+  "anonymized": true,
+  "context": "Ausgangszustand: EQ +6,0 / +6,0 / +2,2 / +2,2 / 0 dB, Bass Boost an, Sound-Mode Equalizer. 0x0803 [00 00] schaltet den Sound-Mode aus; schon das erste Rücklesen danach liefert [00 00]. Laut User klingt es dann 'neutraler, weniger Bass' – die EQ-Kurve wirkt im Mode aus also nicht, bleibt aber gespeichert. 0x0803 [00 01] schaltet zurück. Das Preset Voice (−3 / −1 / +2,5 / +2 / 0 dB) wird Band für Band geschrieben; nach jedem Band kommt 0x1082 mit der ganzen Kurve. Laut User weniger Bass. Danach wurde die eigene Kurve wiederhergestellt.",
+  "steps": [
+    {
+      "command": "SetSoundMode [00 00] (0495/0803)",
+      "tx": "FF 03 00 02 04 95 08 03 00 00",
+      "rx": "FF 03 00 00 04 95 09 03",
+      "decoder": "empty",
+      "expected": "",
+      "note": "01:10:29 Sound-Mode aus; laut User „neutraler, weniger Bass“"
+    },
+    {
+      "command": "GetSoundMode (0495/0804)",
+      "tx": "FF 03 00 00 04 95 08 04",
+      "rx": "FF 03 00 02 04 95 09 04 00 00",
+      "decoder": "soundMode",
+      "expected": "Off",
+      "note": "erstes Rücklesen 21 ms nach der Antwort – sofort übernommen"
+    },
+    {
+      "command": "SetSoundMode [00 01] (0495/0803)",
+      "tx": "FF 03 00 02 04 95 08 03 00 01",
+      "rx": "FF 03 00 00 04 95 09 03",
+      "decoder": "empty",
+      "expected": "",
+      "note": "01:11:35 zurück auf Equalizer"
+    },
+    {
+      "command": "SetEqBand [00 E2] (0495/1001)",
+      "tx": "FF 03 00 02 04 95 10 01 00 E2",
+      "rx": "FF 03 00 00 04 95 11 01",
+      "decoder": "empty",
+      "expected": "",
+      "note": "01:11:45 Preset Voice, Band 0 → −3,0 dB"
+    },
+    {
+      "command": "SetEqBand [01 F6] (0495/1001)",
+      "tx": "FF 03 00 02 04 95 10 01 01 F6",
+      "rx": "FF 03 00 00 04 95 11 01",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Band 1 → −1,0 dB"
+    },
+    {
+      "command": "SetEqBand [02 19] (0495/1001)",
+      "tx": "FF 03 00 02 04 95 10 01 02 19",
+      "rx": "FF 03 00 00 04 95 11 01",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Band 2 → +2,5 dB"
+    },
+    {
+      "command": "SetEqBand [03 14] (0495/1001)",
+      "tx": "FF 03 00 02 04 95 10 01 03 14",
+      "rx": "FF 03 00 00 04 95 11 01",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Band 3 → +2,0 dB; Band 4 war schon 0 dB und wurde nicht geschrieben"
+    },
+    {
+      "command": "GetEqAllGains [00] (0495/1003)",
+      "tx": "FF 03 00 01 04 95 10 03 00",
+      "rx": "FF 03 00 05 04 95 11 03 E2 F6 19 14 00",
+      "decoder": "eqAllGains",
+      "expected": "-3.0 -1.0 2.5 2.0 0.0",
+      "note": "Rücklesen: Preset Voice aktiv; laut User weniger Bass"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "0495/1082",
+      "rx": "FF 03 00 05 04 95 10 82 E2 3C 16 16 00",
+      "decoder": "eqAllGains",
+      "expected": "-3.0 6.0 2.2 2.2 0.0",
+      "note": "nach Band 0 – je geschriebenem Band eine Notification mit der ganzen Kurve"
+    },
+    {
+      "id": "0495/1082",
+      "rx": "FF 03 00 05 04 95 10 82 E2 F6 16 16 00",
+      "decoder": "eqAllGains",
+      "expected": "-3.0 -1.0 2.2 2.2 0.0",
+      "note": "nach Band 1"
+    },
+    {
+      "id": "0495/1082",
+      "rx": "FF 03 00 05 04 95 10 82 E2 F6 19 16 00",
+      "decoder": "eqAllGains",
+      "expected": "-3.0 -1.0 2.5 2.2 0.0",
+      "note": "nach Band 2"
+    },
+    {
+      "id": "0495/1082",
+      "rx": "FF 03 00 05 04 95 10 82 E2 F6 19 14 00",
+      "decoder": "eqAllGains",
+      "expected": "-3.0 -1.0 2.5 2.0 0.0",
+      "note": "nach Band 3"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Momentum4.App/Momentum4.App.csproj" />
+    <Project Path="src/Momentum4.Bluetooth/Momentum4.Bluetooth.csproj" />
+    <Project Path="src/Momentum4.Cli/Momentum4.Cli.csproj" />
+    <Project Path="src/Momentum4.Core/Momentum4.Core.csproj" />
+    <Project Path="src/Momentum4.Protocol/Momentum4.Protocol.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Momentum4.Bluetooth.Tests/Momentum4.Bluetooth.Tests.csproj" />
+    <Project Path="tests/Momentum4.Core.Tests/Momentum4.Core.Tests.csproj" />
+    <Project Path="tests/Momentum4.Protocol.Tests/Momentum4.Protocol.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Momentum4.Poc/Momentum4.Poc.csproj" />
+  </Folder>
+</Solution>

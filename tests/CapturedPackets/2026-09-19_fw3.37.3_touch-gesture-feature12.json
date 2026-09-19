@@ -1,0 +1,42 @@
+{
+  "title": "Touch-Geste mit angemeldetem Feature 12: Transparent Hearing aus und wieder an",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc monitor --features 3,13,8,10,12 --seconds 180 (03:41); der User machte zweimal die Touch-Geste, mit der er zwischen ANC und Transparenz umschaltet",
+  "reference": "docs/protocol.md §6.8, §8; Rohdaten monitor-20260919-034401.json",
+  "anonymized": true,
+  "context": "Ausgangszustand: Transparenz (ANC an, Adaptive 1, Pegel 100, Transparent Hearing an). Die Geste schaltet Transparent Hearing um; das Headset meldet dabei den Pegel (0x1A83) und 5 ms später den Transparent-Hearing-Status (0x1885). Beim Ausschalten fällt der Pegel auf den Wert vor Transparent Hearing (hier 0), der Modus wird Adaptive, weil Adaptive in der Tabelle an war. Die App aktualisiert den Zustand damit sofort statt beim nächsten Poll.",
+  "steps": [],
+  "notifications": [
+    {
+      "id": "0495/1A83",
+      "rx": "FF 03 00 01 04 95 1A 83 00",
+      "decoder": "ancLevel",
+      "expected": "0",
+      "note": "03:42:28.323 Geste 1: Pegel 100 → 0"
+    },
+    {
+      "id": "0495/1885",
+      "rx": "FF 03 00 01 04 95 18 85 00",
+      "decoder": "switch",
+      "expected": "False",
+      "note": "03:42:28.328 Geste 1: Transparent Hearing aus"
+    },
+    {
+      "id": "0495/1A83",
+      "rx": "FF 03 00 01 04 95 1A 83 64",
+      "decoder": "ancLevel",
+      "expected": "100",
+      "note": "03:42:35.488 Geste 2: Pegel 0 → 100"
+    },
+    {
+      "id": "0495/1885",
+      "rx": "FF 03 00 01 04 95 18 85 01",
+      "decoder": "switch",
+      "expected": "True",
+      "note": "03:42:35.504 Geste 2: Transparent Hearing wieder an"
+    }
+  ]
+}

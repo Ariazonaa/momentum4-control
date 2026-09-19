@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(M4WindowsTargetFramework)</TargetFramework>
+    <SupportedOSPlatformVersion>$(M4MinWindowsVersion)</SupportedOSPlatformVersion>
+    <RootNamespace>Momentum4.Cli</RootNamespace>
+    <AssemblyName>m4ctl</AssemblyName>
+    <Description>m4ctl: MOMENTUM 4 von der Kommandozeile steuern – über die laufende App oder direkt.</Description>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <!-- Native AOT beim Veröffentlichen (tools/publish-app.ps1 legt m4ctl.exe neben die App) -->
+    <PublishAot>true</PublishAot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Momentum4.Bluetooth\Momentum4.Bluetooth.csproj" />
+  </ItemGroup>
+
+</Project>

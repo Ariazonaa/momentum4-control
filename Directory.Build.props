@@ -1,0 +1,27 @@
+<Project>
+
+  <!--
+    Build-Ausgabe (bin/obj) liegt außerhalb des Repos: X: ist eine SMB-Freigabe, dort bleiben gerade
+    ausgeführte EXEs gern gesperrt. Überschreibbar über die Umgebungsvariable/Property M4ArtifactsRoot.
+  -->
+  <PropertyGroup>
+    <M4ArtifactsRoot Condition="'$(M4ArtifactsRoot)' == '' and '$(LOCALAPPDATA)' != ''">$(LOCALAPPDATA)\Momentum4Control.build</M4ArtifactsRoot>
+    <ArtifactsPath Condition="'$(M4ArtifactsRoot)' != ''">$(M4ArtifactsRoot)\artifacts</ArtifactsPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <Authors>Ariazonaa</Authors>
+    <Product>MOMENTUM 4 Control (unofficial)</Product>
+    <Version>1.0.0</Version>
+
+    <!-- Gemeinsame Windows-Zielplattform für alle Projekte, die WinRT-APIs nutzen -->
+    <M4WindowsTargetFramework>net10.0-windows10.0.26100.0</M4WindowsTargetFramework>
+    <M4MinWindowsVersion>10.0.19041.0</M4MinWindowsVersion>
+  </PropertyGroup>
+
+</Project>

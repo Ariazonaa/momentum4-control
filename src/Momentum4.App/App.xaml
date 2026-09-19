@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AMOLED-Design (Wunsch des Users): immer dunkel, echter schwarzer Hintergrund, Karten knapp darüber. Eigene Gestaltung –
+    keine Farben, Icons oder Layouts der offiziellen App (Spezifikation §3).
+-->
+<Application
+    x:Class="Momentum4.App.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    RequestedTheme="Dark">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Dark">
+                    <!--
+                        Akzent in Weiß- und Grautönen statt der Windows-Akzentfarbe: aktive Radiobuttons, Regler, Schalter und
+                        Fortschrittsbalken werden weiß, Text und Punkt darauf schwarz (TextOnAccent ist im dunklen Design schwarz).
+                    -->
+                    <Color x:Key="SystemAccentColor">#FFD9D9D9</Color>
+                    <Color x:Key="SystemAccentColorLight1">#FFE6E6E6</Color>
+                    <Color x:Key="SystemAccentColorLight2">#FFFFFFFF</Color>
+                    <Color x:Key="SystemAccentColorLight3">#FFF2F2F2</Color>
+                    <Color x:Key="SystemAccentColorDark1">#FFB3B3B3</Color>
+                    <Color x:Key="SystemAccentColorDark2">#FF8C8C8C</Color>
+                    <Color x:Key="SystemAccentColorDark3">#FF666666</Color>
+                    <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FFFFFFFF" />
+                    <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#E6FFFFFF" />
+                    <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#CCFFFFFF" />
+                    <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#FFFFFFFF" />
+                    <SolidColorBrush x:Key="AccentTextFillColorSecondaryBrush" Color="#FFE6E6E6" />
+                    <SolidColorBrush x:Key="AccentTextFillColorTertiaryBrush" Color="#FFCCCCCC" />
+                    <SolidColorBrush x:Key="ApplicationPageBackgroundThemeBrush" Color="#FF000000" />
+                    <!--  Flyouts, Dropdowns und Menüs ebenfalls fast schwarz statt Acryl-Grau  -->
+                    <SolidColorBrush x:Key="FlyoutPresenterBackground" Color="#FF0B0B0B" />
+                    <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#FF0B0B0B" />
+                    <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="#FF0B0B0B" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
+            <Color x:Key="AmoledBlack">#FF000000</Color>
+            <SolidColorBrush x:Key="AmoledBackgroundBrush" Color="#FF000000" />
+            <SolidColorBrush x:Key="AmoledCardBrush" Color="#FF0D0D0D" />
+            <SolidColorBrush x:Key="AmoledCardStrokeBrush" Color="#FF1E1E1E" />
+
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="Background" Value="{StaticResource AmoledCardBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource AmoledCardStrokeBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="14" />
+                <Setter Property="Padding" Value="18" />
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

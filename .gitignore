@@ -1,0 +1,19 @@
+# Build-Ausgabe (Standard liegt außerhalb des Repos, siehe Directory.Build.props)
+bin/
+obj/
+artifacts/
+
+# IDE / Tools
+.vs/
+.vscode/
+*.user
+*.suo
+TestResults/
+
+# Lokale Logs und Mitschnitte, die noch nicht kommentiert sind
+*.log
+
+# Material zur Analyse (z. B. APK der Hersteller-App) – nie ins Repo, nur Fakten übernehmen
+*.apk
+*.xapk
+*.zip

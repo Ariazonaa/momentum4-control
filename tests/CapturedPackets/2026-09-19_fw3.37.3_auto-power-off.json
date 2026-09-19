@@ -1,0 +1,77 @@
+{
+  "title": "Auto Power Off (Timer 0) auf 30 min, 60 min, nie und zurück auf 15 min",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc set autooff 30|60|0|15 (05:09:36–05:09:51); der User trug das Headset",
+  "reference": "docs/protocol.md §6.2, §12; Rohdaten poc-20260919.log",
+  "anonymized": true,
+  "context": "Ausgangszustand 900 s (15 min). 0x0600 [00, s u16] wird mit leerer Response bestätigt, 0x0601 [00] liest jeweils den neuen Wert zurück. Geschrieben wurden nur die belegten Stufen 1800, 3600 (laut [DS] die App-Stufen 30/60 min), 0 (nie) und 900. Keine Notification, obwohl Feature 3 angemeldet war. Am Ende wieder 900 s.",
+  "steps": [
+    {
+      "command": "SetTimer [00 07 08] (0495/0600)",
+      "tx": "FF 03 00 03 04 95 06 00 00 07 08",
+      "rx": "FF 03 00 00 04 95 07 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "05:09:37.750 Auto Power Off 15 → 30 min"
+    },
+    {
+      "command": "GetTimer [00] (0495/0601)",
+      "tx": "FF 03 00 01 04 95 06 01 00",
+      "rx": "FF 03 00 03 04 95 07 01 00 07 08",
+      "decoder": "timerSeconds",
+      "expected": "1800",
+      "note": "Rücklesen bestätigt"
+    },
+    {
+      "command": "SetTimer [00 0E 10] (0495/0600)",
+      "tx": "FF 03 00 03 04 95 06 00 00 0E 10",
+      "rx": "FF 03 00 00 04 95 07 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "05:09:42.075 Auto Power Off 30 → 60 min"
+    },
+    {
+      "command": "GetTimer [00] (0495/0601)",
+      "tx": "FF 03 00 01 04 95 06 01 00",
+      "rx": "FF 03 00 03 04 95 07 01 00 0E 10",
+      "decoder": "timerSeconds",
+      "expected": "3600",
+      "note": "Rücklesen bestätigt"
+    },
+    {
+      "command": "SetTimer [00 00 00] (0495/0600)",
+      "tx": "FF 03 00 03 04 95 06 00 00 00 00",
+      "rx": "FF 03 00 00 04 95 07 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "05:09:46.497 Auto Power Off 60 min → nie"
+    },
+    {
+      "command": "GetTimer [00] (0495/0601)",
+      "tx": "FF 03 00 01 04 95 06 01 00",
+      "rx": "FF 03 00 03 04 95 07 01 00 00 00",
+      "decoder": "timerSeconds",
+      "expected": "0",
+      "note": "Rücklesen bestätigt"
+    },
+    {
+      "command": "SetTimer [00 03 84] (0495/0600)",
+      "tx": "FF 03 00 03 04 95 06 00 00 03 84",
+      "rx": "FF 03 00 00 04 95 07 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "05:09:50.806 Auto Power Off nie → 15 min (Ausgangszustand)"
+    },
+    {
+      "command": "GetTimer [00] (0495/0601)",
+      "tx": "FF 03 00 01 04 95 06 01 00",
+      "rx": "FF 03 00 03 04 95 07 01 00 03 84",
+      "decoder": "timerSeconds",
+      "expected": "900",
+      "note": "Rücklesen bestätigt"
+    }
+  ]
+}

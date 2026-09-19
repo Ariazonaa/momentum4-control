@@ -1,0 +1,38 @@
+{
+  "title": "Notification-Anmeldung für Feature 2 (device) und 12 (transparentHearing)",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc monitor --features 3,13,8,10,2,12 --seconds 25 (03:39)",
+  "reference": "docs/protocol.md §5.2, §8, §11; Rohdaten poc-20260919.log und monitor-20260919-033936.json",
+  "anonymized": true,
+  "context": "Beide Anmeldungen werden mit leerer Antwort bestätigt. Feature 12 liefert sofort einen Dump mit 0x1885 (Transparent-Hearing-Status); Feature 2 liefert in 25 s keine Notification (der Tragezustand 0x0482 kommt laut [DS] erst beim Auf-/Absetzen). Korrektur 04:05: Direkt nach der Anmeldung kam 0x0502 [03] als Response-Frame ohne Request (Tragezustand 3 = aufgesetzt); die Queue verwarf ihn als unerwartete Antwort, deshalb fiel er zuerst nicht auf (poc-20260919.log 03:39:12). Feature 12 ist deshalb seitdem in der Standard-Anmeldung der App.",
+  "steps": [
+    {
+      "command": "RegisterNotification [02] (0495/0007)",
+      "tx": "FF 03 00 01 04 95 00 07 02",
+      "rx": "FF 03 00 00 04 95 01 07",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Feature 2 (device): bestätigt; danach 0x0502 [03] als Response-Frame, keine Notification (siehe context)"
+    },
+    {
+      "command": "RegisterNotification [0C] (0495/0007)",
+      "tx": "FF 03 00 01 04 95 00 07 0C",
+      "rx": "FF 03 00 00 04 95 01 07",
+      "decoder": "empty",
+      "expected": "",
+      "note": "Feature 12 (transparentHearing): bestätigt, danach sofort 0x1885"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "0495/1885",
+      "rx": "FF 03 00 01 04 95 18 85 01",
+      "decoder": "switch",
+      "expected": "True",
+      "note": "Dump nach der Anmeldung von Feature 12: Transparent Hearing an"
+    }
+  ]
+}

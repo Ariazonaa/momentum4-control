@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(M4WindowsTargetFramework)</TargetFramework>
+    <SupportedOSPlatformVersion>$(M4MinWindowsVersion)</SupportedOSPlatformVersion>
+    <AssemblyName>m4poc</AssemblyName>
+    <RootNamespace>Momentum4.Poc</RootNamespace>
+    <Description>Phase-B-Proof-of-Concept: Headset finden, GAIA-Dienst auflösen, RFCOMM öffnen, passiv lauschen. Sendet nichts.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Momentum4.Bluetooth\Momentum4.Bluetooth.csproj" />
+  </ItemGroup>
+
+</Project>

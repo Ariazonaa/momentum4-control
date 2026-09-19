@@ -1,0 +1,37 @@
+{
+  "title": "0x1403 Wegwerf-Test: trennt, löscht die Kopplung nicht (FW 3.38.3)",
+  "date": "2026-09-19",
+  "firmware": "3.38.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc disc1403 3 (temporär entsperrt, mit Zustimmung des Users; Ziel = getrenntes Wegwerf-Gerät auf Platz 3)",
+  "reference": "docs/protocol.md §6.6, §9, §10; Rohdaten poc-20260919.log",
+  "anonymized": true,
+  "context": "Klärung des Widerspruchs [DS] (Pairing-Verlust) vs. [MC]/[SDC] (Disconnect). Vor dem Senden 4 gekoppelte Geräte; 0x1403 [03] an Platz 3 (getrennt) antwortet mit 0x1503 leer OK; danach weiterhin 4 Geräte, Platz 3 erhalten. Auf FW 3.38.3 also kein Löschen. 0x1403 wurde danach wieder gesperrt.",
+  "steps": [
+    {
+      "command": "GetPairedDevicesListSize (0495/1400)",
+      "tx": "FF 03 00 00 04 95 14 00",
+      "rx": "FF 03 00 02 04 95 15 00 00 04",
+      "decoder": "pairedDeviceCount",
+      "expected": "4",
+      "note": "vorher 4 Geräte"
+    },
+    {
+      "command": "DisconnectPairedDevice [03] (0495/1403)",
+      "tx": "FF 03 00 01 04 95 14 03 03",
+      "rx": "FF 03 00 00 04 95 15 03",
+      "decoder": "empty",
+      "expected": "",
+      "note": "OK, kein Fehler"
+    },
+    {
+      "command": "GetPairedDevicesListSize (0495/1400)",
+      "tx": "FF 03 00 00 04 95 14 00",
+      "rx": "FF 03 00 02 04 95 15 00 00 04",
+      "decoder": "pairedDeviceCount",
+      "expected": "4",
+      "note": "nachher weiterhin 4 – nichts gelöscht"
+    }
+  ]
+}

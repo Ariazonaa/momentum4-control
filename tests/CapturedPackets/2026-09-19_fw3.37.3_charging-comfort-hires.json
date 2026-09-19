@@ -1,0 +1,85 @@
+{
+  "title": "Ladezustand beim Laden, ANC-Comfort an/aus, BT-Kompatibilitätsmodus umgestellt und zurück",
+  "date": "2026-09-19",
+  "firmware": "3.37.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc state / set comfort on|off / set hires on|off (05:43–05:47) mit dem User: Ladekabel eingesteckt, im Modus ANC (Custom, Pegel 0) hingehört",
+  "reference": "docs/protocol.md §6.1, §6.2, §6.9, §12; Rohdaten poc-20260919.log",
+  "anonymized": true,
+  "context": "Mit Kabel liefert 0x0602 [01 00] = lädt (Dump 0x0682 [01]). Comfort (0x1A00 Modus 2) wird übernommen und per 0x1A81 gemeldet; der User hörte im Modus ANC keinen Unterschied. 0x0405 [00] wird übernommen (0x0406 liest 00), aber in 23 s danach keine Trennung, kein neuer Codec (0x0880 blieb 05) und keine andere Sample-Rate (48000); laut User keine Unterbrechung. Danach Comfort 0, 0x0405 [01] und Transparenz wie vorher.",
+  "steps": [
+    {
+      "command": "GetChargingState (0495/0602)",
+      "tx": "FF 03 00 00 04 95 06 02",
+      "rx": "FF 03 00 02 04 95 07 02 01 00",
+      "decoder": "raw",
+      "expected": "01 00",
+      "note": "05:43:44 Kabel eingesteckt: 1 = lädt"
+    },
+    {
+      "command": "SetAncMode [01 01 02 01 03 00] (0495/1A00)",
+      "tx": "FF 03 00 06 04 95 1A 00 01 01 02 01 03 00",
+      "rx": "FF 03 00 00 04 95 1B 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "05:43:47.859 Comfort an (Modus ANC, Pegel 0) – laut User kein Unterschied"
+    },
+    {
+      "command": "SetAncMode [01 01 02 00 03 00] (0495/1A00)",
+      "tx": "FF 03 00 06 04 95 1A 00 01 01 02 00 03 00",
+      "rx": "FF 03 00 00 04 95 1B 00",
+      "decoder": "empty",
+      "expected": "",
+      "note": "05:44:56.627 Comfort wieder aus"
+    },
+    {
+      "command": "SetBtCompatibilityMode [00] (0495/0405)",
+      "tx": "FF 03 00 01 04 95 04 05 00",
+      "rx": "FF 03 00 00 04 95 05 05",
+      "decoder": "empty",
+      "expected": "",
+      "note": "05:45:01.034 besserer Klang (vorher 01)"
+    },
+    {
+      "command": "GetBtCompatibilityMode (0495/0406)",
+      "tx": "FF 03 00 00 04 95 04 06",
+      "rx": "FF 03 00 01 04 95 05 06 00",
+      "decoder": "btCompatibilityMode",
+      "expected": "BetterAudio",
+      "note": "Rücklesen bestätigt; keine Trennung, Codec und Sample-Rate unverändert"
+    },
+    {
+      "command": "SetBtCompatibilityMode [01] (0495/0405)",
+      "tx": "FF 03 00 01 04 95 04 05 01",
+      "rx": "FF 03 00 00 04 95 05 05",
+      "decoder": "empty",
+      "expected": "",
+      "note": "05:47:09.364 zurück auf bessere Kompatibilität"
+    },
+    {
+      "command": "GetBtCompatibilityMode (0495/0406)",
+      "tx": "FF 03 00 00 04 95 04 06",
+      "rx": "FF 03 00 01 04 95 05 06 01",
+      "decoder": "btCompatibilityMode",
+      "expected": "BetterCompatibility",
+      "note": "wie vorher"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "0495/0682",
+      "rx": "FF 03 00 01 04 95 06 82 01",
+      "decoder": "switch",
+      "expected": "True",
+      "note": "Dump nach der Anmeldung von Feature 3 mit eingestecktem Kabel"
+    },
+    {
+      "id": "0495/1A81",
+      "rx": "FF 03 00 06 04 95 1A 81 01 01 02 01 03 00",
+      "decoder": "ancModes",
+      "expected": "AntiWind=Maximum, Comfort=1, Adaptive=False",
+      "note": "05:43:47.883 direkt nach Comfort an"
+    }
+  ]
+}

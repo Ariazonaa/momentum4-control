@@ -1,0 +1,29 @@
+{
+  "title": "Sidetone (0x0806) und Transparent Hearing _TW (0x1803) lesen",
+  "date": "2026-09-19",
+  "firmware": "3.38.3",
+  "headset": "MOMENTUM 4 (80:C3:BA:xx:xx:xx)",
+  "channel": "RFCOMM 1 (SDP-Eintrag 0)",
+  "action": "m4poc features (18:2x), nur lesend",
+  "reference": "docs/protocol.md §6.3, §6.8, §10",
+  "anonymized": true,
+  "context": "0x0806 liefert 02 (Sidetone-Stufe, Bereich 0-5), nicht die Sprache (DE=1 via 0x0807) -> Sidetone-Getter ([SDC]). 0x1803 = 100 wie der ANC-Pegel bei aktiver Transparenz.",
+  "steps": [
+    {
+      "command": "GetSidetone (0495/0806)",
+      "tx": "FF 03 00 00 04 95 08 06",
+      "rx": "FF 03 00 01 04 95 09 06 02",
+      "decoder": "raw",
+      "expected": "02",
+      "note": "Sidetone Stufe 2"
+    },
+    {
+      "command": "GetTransparentHearingTw (0495/1803)",
+      "tx": "FF 03 00 00 04 95 18 03",
+      "rx": "FF 03 00 01 04 95 19 03 64",
+      "decoder": "raw",
+      "expected": "64",
+      "note": "100, wie der Pegel"
+    }
+  ]
+}
