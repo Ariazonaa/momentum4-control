@@ -35,7 +35,7 @@ Smart Control Plus APK research used public plaintext configuration and narrowly
 Install the Python packages from your distribution:
 
 ```sh
-# Debian 13, Ubuntu 24.04 and newer
+# Debian 13, Ubuntu 25.04 and newer
 sudo apt install python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets python3-dbus python3-gi
 # Fedora, Nobara
 sudo dnf install python3-pyside6 python3-dbus python3-gobject
@@ -43,7 +43,15 @@ sudo dnf install python3-pyside6 python3-dbus python3-gobject
 sudo pacman -S pyside6 python-dbus python-gobject
 ```
 
-Older releases such as Debian 12 or Ubuntu 22.04 do not package PySide6 or a new enough Python and are not supported.
+Ubuntu 24.04 does not package PySide6. Install the other two packages with apt and PySide6 from PyPI for the system
+interpreter:
+
+```sh
+sudo apt install python3-pip python3-dbus python3-gi libegl1 libgl1 libxkbcommon0 libfontconfig1
+/usr/bin/python3 -m pip install --user --break-system-packages PySide6-Essentials
+```
+
+Debian 12 and Ubuntu 22.04 have neither a PySide6 package nor a new enough Python and are not supported.
 
 This is an instruction for the user; the installer does not install system packages or require root.
 
