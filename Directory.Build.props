@@ -17,7 +17,7 @@
     <Deterministic>true</Deterministic>
     <Authors>Ariazonaa</Authors>
     <Product>MOMENTUM 4 Control (unofficial)</Product>
-    <Version>1.0.0</Version>
+    <Version>1.1.2</Version>
 
     <!-- Gemeinsame Windows-Zielplattform für alle Projekte, die WinRT-APIs nutzen -->
     <M4WindowsTargetFramework>net10.0-windows10.0.26100.0</M4WindowsTargetFramework>
