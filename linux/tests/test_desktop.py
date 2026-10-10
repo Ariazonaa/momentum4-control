@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
+from momentum_control import __version__
 from momentum_control.backend import Snapshot, PeerDevice
 from momentum_control.desktop import autostart_enabled, export_diagnostics, set_autostart
 from momentum_control.preferences import PreferenceError
@@ -91,7 +92,7 @@ class DesktopTests(unittest.TestCase):
         state = replace(self.snapshot, settings={**self.snapshot.settings, 'device_address': 'private-address', 'notes': 'private-note'}, writable=self.snapshot.writable | {'private@example.org'})
         export_diagnostics(self.output, state, ({'operation': 'refresh', 'status': 'ok', 'elapsed_ms': 12.5, 'error': 'private failure'},))
         self.assertEqual(self.diagnostic(), {
-            'app': {'platform': 'linux', 'version': '0.1.0'}, 'model_family': 'M5', 'firmware': [6, 21, 5], 'battery': 87,
+            'app': {'platform': 'linux', 'version': __version__}, 'model_family': 'M5', 'firmware': [6, 21, 5], 'battery': 87,
             'settings': {'anc_enabled': True, 'anc_strength': 75, 'sound_mode': 1, 'antiwind': 1},
             'eq_gains': [0.0, 1.2], 'eq_frequencies': [90, 90], 'writable': ['anc_enabled', 'antiwind', 'eq'],
             'events': [{'operation': 'refresh', 'status': 'ok', 'elapsed_ms': 12.5}]})
@@ -117,7 +118,7 @@ class DesktopTests(unittest.TestCase):
         except PreferenceError as error:
             self.fail(f'Actual GUI operation was rejected: {error}')
         self.assertEqual(self.diagnostic(), {
-            'app': {'platform': 'linux', 'version': '0.1.0'}, 'model_family': 'M5', 'firmware': [6, 21, 5], 'battery': 87,
+            'app': {'platform': 'linux', 'version': __version__}, 'model_family': 'M5', 'firmware': [6, 21, 5], 'battery': 87,
             'settings': settings, 'eq_gains': [0.0, 1.2], 'eq_frequencies': [90, 90],
             'writable': sorted((*settings, 'eq')),
             'events': [{'operation': name, 'status': 'ok', 'elapsed_ms': index} for index, name in enumerate(operations)]})

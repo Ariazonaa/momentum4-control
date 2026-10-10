@@ -51,7 +51,7 @@ sudo apt install python3-pip python3-dbus python3-gi libegl1 libgl1 libxkbcommon
 /usr/bin/python3 -m pip install --user --break-system-packages PySide6-Essentials
 ```
 
-Debian 12 and Ubuntu 22.04 have neither a PySide6 package nor a new enough Python and are not supported.
+Debian 12 supplies Python 3.11, which meets the Python requirement, but has no distribution PySide6 package and is not covered by the installation checks. Ubuntu 22.04 defaults to Python 3.10, below the required Python 3.11. Neither is currently in the supported/tested installation set.
 
 This is an instruction for the user; the installer does not install system packages or require root.
 
@@ -79,7 +79,9 @@ Or from the repository root, building the helper yourself:
 
 “Momentum Control” also appears in the application launcher. Add `~/.local/bin` to your shell's PATH if you want to use the command names directly.
 
-The installer preflights dependencies using `/usr/bin/python3`, copies the application into `~/.local/share/momentum4-control-linux`, and installs the GUI/CLI launchers, desktop entry and icon under `~/.local`. It does not link to the checkout, create a virtual environment, enable autostart, pair devices, or modify global configuration. Moving or deleting the checkout does not affect the installed app.
+The installer preflights dependencies using `/usr/bin/python3`, checks that a private copy of the bundled helper starts and reports the supported protocol within ten seconds, copies the application into `~/.local/share/momentum4-control-linux`, and installs the GUI/CLI launchers, desktop entry and icon under `~/.local`. It does not link to the checkout, create a virtual environment, enable autostart, pair devices, or modify global configuration. Moving or deleting the checkout does not affect the installed app.
+
+Release builds use `./linux/build.sh VERSION` followed by `./linux/package.sh VERSION`; the archive label, executable and `core/version.txt` must agree. A source checkout without built version metadata reports `development`. Diagnostics report the installed release version.
 
 After source changes, rebuild with `./linux/build.sh` and re-run `./linux/install.sh` to update a managed installation. The manifest records the installed files and their hashes. An existing unrelated installation, modified managed file, unknown file in the application directory, or symlink in a target path causes refusal. Keep personal files outside the application directory. Install and update stage the complete payload and manifest before replacing managed files; ordinary write or rename failures and catchable interruptions such as Ctrl+C restore the previous files and modes and remove staging files. If rollback itself fails or is interrupted, unrestored original backups are retained. Uninstall similarly restores managed files if removal fails. This rollback covers caught filesystem errors, not a process crash or power loss.
 
@@ -120,7 +122,7 @@ Reconnect resolves only the explicitly chosen or validated stored address agains
 
 Tray actions use the same command queue. Close-to-tray and minimized startup work only with an enabled available tray; otherwise the window stays visible and closing exits. `momentum-control --minimized` honors the same fallback. Tray Quit bypasses close-to-tray, cancels work, closes the client on its worker and ends the process. Firmware application refuses both closing and quitting until the transfer finishes.
 
-Project release checks are manual unless explicitly enabled once per run. They query the fixed public GitHub release endpoint with verified HTTPS, refused redirects and bounded response/time budgets. The result is labeled **upstream Windows project release information**; it does not announce or install a Linux companion update, and no release artifacts are downloaded. Diagnostics export uses an explicit save dialog and contains only allowlisted device settings and at most 2000 enum action outcomes; it omits names, addresses, serials, peers, raw exceptions and packet data.
+Project release checks are manual unless explicitly enabled once per run. They query the fixed public GitHub release endpoint with verified HTTPS, refused redirects and bounded response/time budgets. The result links to the project release containing Linux and Windows downloads. Linux updates are manual: download the archive for your architecture and run its installer. The check itself downloads no release artifacts and changes no installed files. Diagnostics export uses an explicit save dialog and contains only allowlisted device settings and at most 2000 enum action outcomes; it omits names, addresses, serials, peers, raw exceptions and packet data.
 
 **Local Sound Zones:** App settings opens a separate local zone editor with explicit enablement, name, latitude/longitude, radius (100–50000 m), and an embedded verified EQ preset. Save captures only idle, confirmed EQ with the exact selected address/model/frequencies; overlapping zones for the same device are refused. Coordinates are private local data, excluded from diagnostics. There is no manufacturer account, phone synchronization or cloud service.
 

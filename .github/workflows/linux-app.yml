@@ -33,7 +33,7 @@ jobs:
           sudo apt-get install -y python3-pip python3-dbus python3-gi gir1.2-glib-2.0 desktop-file-utils libegl1
           sudo /usr/bin/python3 -m pip install --break-system-packages 'PySide6==6.11.2'
       - name: Build self-contained shared core
-        run: ./linux/build.sh
+        run: ./linux/build.sh 0.0.0-ci
       - name: Shared core host tests
         run: |
           dotnet restore tests/Momentum4.CoreHost.Tests/Momentum4.CoreHost.Tests.csproj --configfile linux/NuGet.Config
@@ -47,7 +47,7 @@ jobs:
           desktop-file-validate linux/assets/momentum-control.desktop
           sh -n linux/build.sh linux/install.sh linux/uninstall.sh linux/package.sh
       - name: Pack release archive
-        run: ./linux/package.sh ci "$RUNNER_TEMP/dist"
+        run: ./linux/package.sh 0.0.0-ci "$RUNNER_TEMP/dist"
       - uses: actions/upload-artifact@v4
         with:
           name: linux-archive
@@ -87,12 +87,12 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: |
           set -eu
-          tar -xzf Momentum4Control-ci-linux-x64.tar.gz
-          cd momentum-control-linux-ci
+          tar -xzf Momentum4Control-0.0.0-ci-linux-x64.tar.gz
+          cd momentum-control-linux-0.0.0-ci
           ./install.sh
           app="$HOME/.local/share/momentum4-control-linux"
           "$app/core/momentum-core-host" --version
           "$HOME/.local/bin/momentumctl" --help
-          /usr/bin/python3 -B -c "import sys; sys.path.insert(0, sys.argv[1]); import momentum_control.gui" "$app"
+          timeout 15s /usr/bin/python3 -B ./smoke.py "$app" --expected-version 0.0.0-ci
           ./uninstall.sh
           test ! -e "$app"

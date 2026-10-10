@@ -26,7 +26,7 @@ class CoreInstallerTests(unittest.TestCase):
             (self.source / 'momentum_control' / name).touch(exist_ok=True)
         self.core = self.source / 'core' / 'momentum-core-host'
         self.core.parent.mkdir()
-        self.core.write_bytes(b'#!/bin/sh\n[ "$1" = "--version" ] || exit 2\nprintf "packaging-fixture\\n"\n')
+        self.core.write_bytes(b'#!/bin/sh\n[ "$1" = "--version" ] || exit 2\nprintf "momentum-core-host 1.2.3 protocol 1\\n"\n')
         self.core.chmod(0o755)
         self.prefix = self.root / 'prefix'
         self.core_relative = 'share/momentum4-control-linux/core/momentum-core-host'
@@ -45,7 +45,7 @@ class CoreInstallerTests(unittest.TestCase):
             self.assertIn(str(installer.APP / 'momentum_control' / name), manifest)
         result = subprocess.run([str(installed), '--version'], cwd='/', env={},
                                 capture_output=True, text=True, timeout=2)
-        self.assertEqual((result.returncode, result.stdout), (0, 'packaging-fixture\n'))
+        self.assertEqual((result.returncode, result.stdout), (0, 'momentum-core-host 1.2.3 protocol 1\n'))
         installer.uninstall(self.prefix)
         self.assertFalse((self.prefix / installer.APP).exists())
 
@@ -79,7 +79,7 @@ class CoreInstallerTests(unittest.TestCase):
         self.core.parent.symlink_to(target, target_is_directory=True)
         with self.assertRaises(ValueError):
             installer.payloads(self.prefix)
-        self.assertEqual(external.read_bytes(), b'#!/bin/sh\n[ "$1" = "--version" ] || exit 2\nprintf "packaging-fixture\\n"\n')
+        self.assertEqual(external.read_bytes(), b'#!/bin/sh\n[ "$1" = "--version" ] || exit 2\nprintf "momentum-core-host 1.2.3 protocol 1\\n"\n')
 
     def test_growing_core_is_bounded_even_when_stat_reported_small(self):
         self.core.write_bytes(b'x' * 33)
