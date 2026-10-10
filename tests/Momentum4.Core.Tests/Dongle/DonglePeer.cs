@@ -50,7 +50,7 @@ internal sealed class DonglePeer : IDongleLeaseProvider, IDongleLease
     public ValueTask DisposeAsync() { LeaseDisposed = true; return ValueTask.CompletedTask; }
     public async Task<T> Complete<T>(Task<T> task)
     {
-        for (var index = 0; index < 7000 && !task.IsCompleted; index++) { Clock.Advance(TimeSpan.FromMilliseconds(100)); await Task.Delay(1, TestContext.Current.CancellationToken); }
+        for (var index = 0; index < 7000 && !task.IsCompleted; index++) { Clock.Advance(TimeSpan.FromMilliseconds(100)); await Task.Delay(5, TestContext.Current.CancellationToken); }
         return await task;
     }
     public static byte[] ControlReply(byte command, byte[] payload, byte marker = 0xff)
