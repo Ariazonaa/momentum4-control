@@ -26,7 +26,7 @@ class InstallerInterruptTests(unittest.TestCase):
             (self.source / 'momentum_control' / module).touch(exist_ok=True)
         self.core = self.source / 'core/momentum-core-host'
         self.core.parent.mkdir()
-        self.core.write_bytes(b'#!/bin/sh\nexit 0\n')
+        self.core.write_bytes(b'#!/bin/sh\nprintf "momentum-core-host 1.2.3 protocol 1\\n"\n')
         self.core.chmod(0o755)
         self.prefix = self.root / 'prefix'
         source_patch = patch.object(installer, '__file__', str(self.source / 'install.py'))
@@ -49,12 +49,12 @@ class InstallerInterruptTests(unittest.TestCase):
                 for path in self.prefix.rglob('*') if path.is_file()}
 
     def prepare_update(self):
-        self.core.write_bytes(b'#!/bin/sh\nexit 0\n')
+        self.core.write_bytes(b'#!/bin/sh\nprintf "momentum-core-host 1.2.3 protocol 1\\n"\n')
         installer.install(self.prefix)
         (self.prefix / installer.CORE_HOST).chmod(0o700)
         (self.prefix / 'bin/momentum-control').chmod(0o750)
         previous = self.snapshot()
-        self.core.write_bytes(b'#!/bin/sh\nexit 1\n')
+        self.core.write_bytes(b'#!/bin/sh\nprintf "momentum-core-host 1.2.4 protocol 1\\n"\n')
         return previous
 
     def assert_restored_and_retry(self, previous, installed):

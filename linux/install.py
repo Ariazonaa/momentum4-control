@@ -3,29 +3,40 @@ import argparse
 import hashlib
 import json
 import os
+import re
+import selectors
 import shutil
 import stat
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
+import time
 
 
 APP = Path('share/momentum4-control-linux')
 MANIFEST = APP / 'manifest.json'
 CORE_HOST = APP / 'core/momentum-core-host'
+CORE_VERSION = APP / 'core/version.txt'
+CORE_PROBE_TIMEOUT = 10.0
+CORE_PROBE_CLEANUP_TIMEOUT = 0.5
+MAX_PROBE_STDOUT = 256
+MAX_PROBE_STDERR = 4096
 MAX_CORE_BYTES = 128 * 1024 * 1024
 MAX_FILE_BYTES = 2 * 1024 * 1024
 MODULES = ('__init__.py', '__main__.py', 'backend.py', 'cli.py', 'gui.py', 'protocol.py', 'dongle.py', 'firmware.py', 'firmware_update.py',
            'preferences.py', 'desktop.py', 'i18n.py', 'updates.py', 'sound_zones.py', 'sound_check.py',
            'core_proxy.py', 'bluez.py', 'hidraw.py', 'models.py', 'errors.py')
-DEPENDENCIES = '''  Debian/Ubuntu: sudo apt install python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets python3-dbus python3-gi
+DEPENDENCIES = '''  Debian 13 / Ubuntu 25.04+: sudo apt install python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets python3-dbus python3-gi
+  Ubuntu 24.04:  sudo apt install python3-pip python3-dbus python3-gi libegl1 libgl1 libxkbcommon0 libfontconfig1
+                 /usr/bin/python3 -m pip install --user --break-system-packages PySide6-Essentials
   Fedora:        sudo dnf install python3-pyside6 python3-dbus python3-gobject
   Arch:          sudo pacman -S pyside6 python-dbus python-gobject'''
 ALLOWED = {
     *(str(APP / 'momentum_control' / module) for module in MODULES),
     str(APP / 'install.py'), str(APP / 'README.md'), str(APP / 'LICENSE'),
     str(APP / 'assets/70-momentum-btd700.rules'),
-    str(CORE_HOST),
+    str(CORE_HOST), str(CORE_VERSION),
     'bin/momentum-control', 'bin/momentumctl',
     'share/applications/momentum-control.desktop',
     'share/icons/hicolor/scalable/apps/momentum-control.svg',
@@ -117,6 +128,80 @@ def read_source(source, relative, limit=MAX_FILE_BYTES):
     return data
 
 
+def stop_core_probe(process):
+    if process.poll() is not None:
+        return
+    try:
+        process.terminate()
+        process.wait(timeout=CORE_PROBE_CLEANUP_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        pass
+    finally:
+        if process.poll() is None:
+            process.kill()
+            try:
+                try:
+                    process.wait(timeout=CORE_PROBE_CLEANUP_TIMEOUT)
+                except KeyboardInterrupt:
+                    process.wait(timeout=CORE_PROBE_CLEANUP_TIMEOUT)
+                    raise
+            except subprocess.TimeoutExpired:
+                raise ValueError('Shared core probe could not stop; close it before retrying installation') from None
+
+
+def probe_core(core_data):
+    # Compatibility checking, not a sandbox: only install packages you trust.
+    try:
+        with tempfile.TemporaryDirectory(prefix='momentum-core-probe-') as directory:
+            snapshot = Path(directory) / 'momentum-core-host'
+            snapshot.write_bytes(core_data)
+            snapshot.chmod(0o700)
+            deadline = time.monotonic() + CORE_PROBE_TIMEOUT
+            process = subprocess.Popen([str(snapshot), '--version'], cwd=directory, env={},
+                                       stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE, close_fds=True)
+            try:
+                stdout = bytearray()
+                sizes = {'stdout': 0, 'stderr': 0}
+                with selectors.DefaultSelector() as selector:
+                    selector.register(process.stdout, selectors.EVENT_READ, ('stdout', MAX_PROBE_STDOUT))
+                    selector.register(process.stderr, selectors.EVENT_READ, ('stderr', MAX_PROBE_STDERR))
+                    while selector.get_map():
+                        remaining = deadline - time.monotonic()
+                        if remaining <= 0:
+                            raise ValueError('Shared core startup timed out; use a compatible Linux release or rebuild ./linux/build.sh')
+                        for key, _ in selector.select(remaining):
+                            name, limit = key.data
+                            chunk = os.read(key.fd, min(4096, limit + 1 - sizes[name]))
+                            if not chunk:
+                                selector.unregister(key.fileobj)
+                                continue
+                            sizes[name] += len(chunk)
+                            if sizes[name] > limit:
+                                raise ValueError('Shared core startup output exceeded its limit; use a compatible release or rebuild ./linux/build.sh')
+                            if name == 'stdout':
+                                stdout.extend(chunk)
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise subprocess.TimeoutExpired(process.args, CORE_PROBE_TIMEOUT)
+                if process.wait(timeout=remaining) != 0:
+                    raise ValueError('Shared core startup failed; use a release matching your Linux architecture and runtime, or rebuild ./linux/build.sh')
+            finally:
+                try:
+                    stop_core_probe(process)
+                finally:
+                    process.stdout.close()
+                    process.stderr.close()
+    except subprocess.TimeoutExpired:
+        raise ValueError('Shared core startup timed out; use a compatible Linux release or rebuild ./linux/build.sh') from None
+    except OSError:
+        raise ValueError('Shared core could not start; use a release matching your Linux architecture and runtime, or rebuild ./linux/build.sh') from None
+    match = re.fullmatch(rb'momentum-core-host ([0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9][A-Za-z0-9.-]*)?) protocol 1(?:\r?\n)?', stdout)
+    if match is None or len(match[1]) > 64:
+        raise ValueError('Shared core returned an invalid version or unsupported protocol; use a matching release or rebuild ./linux/build.sh')
+    return match[1].decode('ascii')
+
+
 def payloads(prefix):
     source = Path(__file__).resolve().parent
     payload = {}
@@ -130,7 +215,9 @@ def payloads(prefix):
         core_data = core_file.read(MAX_CORE_BYTES + 1)
     if not 1 <= len(core_data) <= MAX_CORE_BYTES:
         raise ValueError('Shared core file changed or exceeds 128 MiB')
+    version = probe_core(core_data)
     payload[str(CORE_HOST)] = core_data
+    payload[str(CORE_VERSION)] = (version + '\n').encode('ascii')
     for module in MODULES:
         path = source / 'momentum_control' / module
         if path.is_symlink():

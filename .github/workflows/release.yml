@@ -76,10 +76,7 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Build self-contained shared core
-        run: ./linux/build.sh
-
-      - name: Pack archive
+      - name: Build and pack archive
         env:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
@@ -87,6 +84,7 @@ jobs:
           elif [ -n "$INPUT_VERSION" ]; then version=$INPUT_VERSION
           else version=$(sed -n 's:.*<Version>\([^<]*\)</Version>.*:\1:p' Directory.Build.props | head -n 1)
           fi
+          ./linux/build.sh "$version"
           ./linux/package.sh "$version" "$GITHUB_WORKSPACE/dist"
           sha256sum dist/*
 

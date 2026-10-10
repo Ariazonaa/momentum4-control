@@ -68,7 +68,8 @@ class ParityGuiTests(unittest.TestCase):
         self.assertIs(self.window.worker.client, client)
         self.assertIs(self.window.snapshot, snapshot)
         self.assertEqual(self.window.section, 'equalizer')
-        self.assertIn('Windows', self.window.release_label.text())
+        self.assertIn('Linux and Windows', self.window.release_label.text())
+        self.assertIn('manually', self.window.release_label.text())
         def failed(cancelled=None):
             raise RuntimeError('Service unavailable')
         self.window.worker.release_checker = failed

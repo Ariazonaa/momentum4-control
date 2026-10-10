@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Reflection;
 
 namespace Momentum4.CoreHost;
 
@@ -8,7 +9,8 @@ public static class Program
     {
         if (args is ["--version"])
         {
-            Console.WriteLine("momentum-core-host 1.0.0 protocol 1");
+            var version = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Split('+')[0];
+            Console.WriteLine($"momentum-core-host {version} protocol 1");
             return 0;
         }
         try

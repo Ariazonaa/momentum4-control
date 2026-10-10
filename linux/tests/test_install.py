@@ -157,7 +157,7 @@ runpy.run_path({str(launcher)!r}, run_name='__main__')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, 'installed GUI entry reached\n')
         manifest = json.loads((self.app / 'manifest.json').read_text())['files']
-        self.assertEqual(len(manifest), 29)
+        self.assertEqual(len(manifest), 30)
         for name in ('preferences.py', 'desktop.py', 'i18n.py', 'updates.py', 'sound_zones.py', 'sound_check.py'):
             path = self.app / 'momentum_control' / name
             self.assertEqual(path.read_bytes(), (ROOT / 'momentum_control' / name).read_bytes())

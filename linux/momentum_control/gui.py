@@ -1415,7 +1415,7 @@ class MainWindow(QMainWindow):
         self.release_button = QPushButton(self.tr('Check project release'))
         self.release_button.clicked.connect(lambda: self.submit('project-release'))
         maintenance.addWidget(self.release_button)
-        self.release_label = self.label('Manual upstream Windows project release information. These releases do not update this Linux companion.', muted=True)
+        self.release_label = self.label('Check Linux and Windows releases. Download and install Linux updates manually.', muted=True)
         maintenance.addWidget(self.release_label)
         self.export_button = QPushButton(self.tr('Export redacted diagnostics'))
         self.export_button.clicked.connect(self.export_diagnostic_file)
@@ -2123,7 +2123,7 @@ class MainWindow(QMainWindow):
             self.preset_notice.show()
         if request.action == 'project-release':
             self.release_label.setText(self.tr('Project release check failed.') if error else
-                self.tr('Upstream Windows project release:') + f' {result.tag}\n{result.url}\n' + self.tr('These releases do not update this Linux companion.'))
+                self.tr('Linux and Windows project release:') + f' {result.tag}\n{result.url}\n' + self.tr('Download the Linux archive for your architecture and install it manually.'))
             self.update_enabled()
             return
         if request.action in ('write', 'mode'):
