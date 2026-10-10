@@ -21,7 +21,6 @@ jobs:
     timeout-minutes: 20
     env:
       QT_QPA_PLATFORM: offscreen
-      PYTHONPATH: linux:${{ runner.temp }}/momentum-deps
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -32,6 +31,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3-pip python3-dbus python3-gi gir1.2-glib-2.0 desktop-file-utils libegl1
           /usr/bin/python3 -m pip install --target "$RUNNER_TEMP/momentum-deps" 'PySide6==6.11.2'
+          echo "PYTHONPATH=linux:$RUNNER_TEMP/momentum-deps" >> "$GITHUB_ENV"
       - name: Build self-contained shared core
         run: ./linux/build.sh
       - name: Shared core host tests
