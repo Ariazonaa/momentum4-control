@@ -77,7 +77,7 @@ public static class CommandCatalog
     public static readonly CommandDescriptor GetAudioPromptMode = New("GetAudioPromptMode", S, 0x0802, Read, Verified, 0);
     public static readonly CommandDescriptor SetSoundMode = New("SetSoundMode", S, 0x0803, Setting, Verified, 2);
     public static readonly CommandDescriptor GetSoundMode = New("GetSoundMode", S, 0x0804, Read, Verified, 0);
-    public static readonly CommandDescriptor SetSidetone = New("SetSidetone", S, 0x0805, Setting, Unverified, 1);
+    public static readonly CommandDescriptor SetSidetone = New("SetSidetone", S, 0x0805, Setting, Verified, 1);
     public static readonly CommandDescriptor GetSidetone = New("GetSidetone", S, 0x0806, Read, Verified, 0);
     public static readonly CommandDescriptor GetPromptLanguage = New("GetPromptLanguage", S, 0x0807, Read, Verified, 0);
     public static readonly CommandDescriptor GetAvailablePromptLanguages = New("GetAvailablePromptLanguages", S, 0x0808, Read, Verified, 0);
@@ -135,7 +135,7 @@ public static class CommandCatalog
     // ---- transparentHearing (Feature 12) ----
     public static readonly CommandDescriptor SetTransparentHearingMode = New("SetTransparentHearingMode", S, 0x1800, Setting, Verified, 1);
     public static readonly CommandDescriptor GetTransparentHearingMode = New("GetTransparentHearingMode", S, 0x1801, Read, Verified, 0);
-    public static readonly CommandDescriptor SetTransparentHearingTw = New("SetTransparentHearingTw", S, 0x1802, SafetyClass.Unknown, ProtocolStatus.Unknown);
+    public static readonly CommandDescriptor SetTransparentHearingTw = New("SetTransparentHearingTw", S, 0x1802, Setting, Verified, 1);
     public static readonly CommandDescriptor GetTransparentHearingTw = New("GetTransparentHearingTw", S, 0x1803, Read, Verified, 0);
     public static readonly CommandDescriptor SetTransparentHearingStatus = New("SetTransparentHearingStatus", S, 0x1804, Setting, Verified, 1);
     public static readonly CommandDescriptor GetTransparentHearingStatus = New("GetTransparentHearingStatus", S, 0x1805, Read, Verified, 0);
@@ -153,6 +153,13 @@ public static class CommandCatalog
     public static readonly CommandDescriptor Unknown2003 = New("Unknown2003", S, 0x2003, SafetyClass.Unknown, ProtocolStatus.Unknown);
     public static readonly CommandDescriptor Unknown2005 = New("Unknown2005", S, 0x2005, SafetyClass.Unknown, ProtocolStatus.Unknown);
     public static readonly CommandDescriptor Unknown2007 = New("Unknown2007", S, 0x2007, SafetyClass.Unknown, ProtocolStatus.Unknown);
+
+    public static readonly CommandDescriptor SetBatteryProtection = New("SetBatteryProtection", S, 0x060A, Setting, Verified, 1);
+    public static readonly CommandDescriptor GetBatteryProtection = New("GetBatteryProtection", S, 0x060B, Read, Verified, 0);
+    public static readonly CommandDescriptor SetHeadTracking = New("SetHeadTracking", S, 0x3602, Setting, Verified, 1);
+    public static readonly CommandDescriptor GetHeadTracking = New("GetHeadTracking", S, 0x3603, Read, Verified, 0);
+    public static readonly CommandDescriptor SetImmersiveAudio = New("SetImmersiveAudio", S, 0x3604, Setting, Verified, 1);
+    public static readonly CommandDescriptor GetImmersiveAudio = New("GetImmersiveAudio", S, 0x3605, Read, Verified, 0);
 
     private static readonly FrozenDictionary<(ushort Vendor, ushort Command), CommandDescriptor> ByKey = typeof(CommandCatalog)
         .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)

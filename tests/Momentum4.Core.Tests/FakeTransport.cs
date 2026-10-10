@@ -21,6 +21,8 @@ internal sealed class FakeTransport : ITransport
     /// <summary>Wird bei jedem Write aufgerufen; die gelieferten Blöcke kommen sofort als Empfangsdaten zurück.</summary>
     public Func<byte[], IEnumerable<byte[]>>? Responder { get; set; }
 
+    public Action? AfterResponse { get; set; }
+
     public List<byte[]> Writes { get; } = [];
 
     /// <summary>So viele der nächsten Verbindungsversuche schlagen fehl.</summary>
@@ -83,6 +85,7 @@ internal sealed class FakeTransport : ITransport
             Receive(chunk);
         }
 
+        AfterResponse?.Invoke();
         return ValueTask.CompletedTask;
     }
 

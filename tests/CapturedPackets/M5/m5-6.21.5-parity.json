@@ -1,0 +1,251 @@
+{
+  "model": "M5AEBT Black",
+  "firmware": "6.21.5",
+  "exchanges": [
+    {
+      "command": "1206",
+      "request": "",
+      "response": "4d354145425420426c61636b00"
+    },
+    {
+      "command": "1201",
+      "request": "",
+      "response": "000600150005"
+    },
+    {
+      "command": "0602",
+      "request": "",
+      "response": "0000"
+    },
+    {
+      "command": "0401",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "080b",
+      "request": "",
+      "response": "01"
+    },
+    {
+      "command": "1801",
+      "request": "",
+      "response": "01"
+    },
+    {
+      "command": "0601",
+      "request": "00",
+      "response": "000384"
+    },
+    {
+      "command": "0806",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "0402",
+      "request": "",
+      "response": "03"
+    },
+    {
+      "command": "0406",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "2001",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "2802",
+      "request_length": 0,
+      "response_length": 13,
+      "private_fields_omitted": true
+    },
+    {
+      "command": "1400",
+      "request": "",
+      "response": "0003"
+    },
+    {
+      "command": "1407",
+      "request": "",
+      "response": "02"
+    },
+    {
+      "command": "1409",
+      "request": "",
+      "response": "02"
+    },
+    {
+      "command": "1401",
+      "request_length": 1,
+      "response_length": 16,
+      "private_fields_omitted": true
+    },
+    {
+      "command": "1401",
+      "request_length": 1,
+      "response_length": 11,
+      "private_fields_omitted": true
+    },
+    {
+      "command": "1401",
+      "request_length": 1,
+      "response_length": 10,
+      "private_fields_omitted": true
+    },
+    {
+      "command": "0400",
+      "request": "01",
+      "response": ""
+    },
+    {
+      "command": "0401",
+      "request": "",
+      "response": "01"
+    },
+    {
+      "command": "0400",
+      "request": "00",
+      "response": ""
+    },
+    {
+      "command": "0401",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "080a",
+      "request": "00",
+      "response": ""
+    },
+    {
+      "command": "080b",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "080a",
+      "request": "01",
+      "response": ""
+    },
+    {
+      "command": "080b",
+      "request": "",
+      "response": "01"
+    },
+    {
+      "command": "1800",
+      "request": "00",
+      "response": ""
+    },
+    {
+      "command": "1801",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "1800",
+      "request": "01",
+      "response": ""
+    },
+    {
+      "command": "1801",
+      "request": "",
+      "response": "01"
+    },
+    {
+      "command": "0600",
+      "request": "000708",
+      "response": ""
+    },
+    {
+      "command": "0601",
+      "request": "00",
+      "response": "000708"
+    },
+    {
+      "command": "0600",
+      "request": "000384",
+      "response": ""
+    },
+    {
+      "command": "0601",
+      "request": "00",
+      "response": "000384"
+    },
+    {
+      "command": "0805",
+      "request": "01",
+      "response": ""
+    },
+    {
+      "command": "0806",
+      "request": "",
+      "response": "01"
+    },
+    {
+      "command": "0805",
+      "request": "00",
+      "response": ""
+    },
+    {
+      "command": "0806",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "2801",
+      "request_length": 13,
+      "response_length": 0,
+      "private_fields_omitted": true
+    },
+    {
+      "command": "2802",
+      "request_length": 0,
+      "response_length": 13,
+      "private_fields_omitted": true
+    },
+    {
+      "command": "2801",
+      "request_length": 13,
+      "response_length": 0,
+      "private_fields_omitted": true
+    },
+    {
+      "command": "2802",
+      "request_length": 0,
+      "response_length": 13,
+      "private_fields_omitted": true
+    }
+  ],
+  "checks": [
+    {
+      "setting": "on_head_detection",
+      "changed_verified_restored": true
+    },
+    {
+      "setting": "auto_answer",
+      "changed_verified_restored": true
+    },
+    {
+      "setting": "pause_on_transparency",
+      "changed_verified_restored": true
+    },
+    {
+      "setting": "auto_power_off",
+      "changed_verified_restored": true
+    },
+    {
+      "setting": "sidetone",
+      "changed_verified_restored": true
+    },
+    {
+      "setting": "rename",
+      "changed_verified_restored": true
+    }
+  ],
+  "restored": true
+}

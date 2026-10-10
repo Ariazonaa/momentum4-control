@@ -74,7 +74,12 @@ public static class DeviceManagementCodec
             throw new ProtocolFormatException($"Verbindungsstatus: Index-Echo {payload[0]} statt {expectedIndex}", payload);
         }
 
-        return payload[1] != 0;
+        if (payload[1] > 1)
+        {
+            throw new ProtocolFormatException("Invalid peer connection status", payload);
+        }
+
+        return payload[1] == 1;
     }
 
     /// <summary><c>0x1407</c> → <c>[index]</c>.</summary>

@@ -34,6 +34,12 @@ public sealed record Momentum4ServiceOptions
 
     public IReadOnlyList<TimeSpan>? Backoff { get; init; }
 
+    public bool ReadSerialNumber { get; init; } = true;
+
+    public bool EnablePolling { get; init; } = true;
+
+    public bool Reconnect { get; init; } = true;
+
     /// <summary>Nach so vielen Timeouts in Folge wird die Verbindung neu aufgebaut (docs/architecture.md §9).</summary>
     public int MaxConsecutiveTimeouts { get; init; } = 3;
 
@@ -77,7 +83,7 @@ public sealed class PeerActionRefusedException(string message) : Exception(messa
 /// Fassade für App, CLI und PoC (docs/architecture.md §6.5): hält Verbindung, Zustand, Notifications und Polling
 /// zusammen und bietet die Aktionen für Noise Control und EQ an (Write → Verify).
 /// </summary>
-public sealed class Momentum4Service : IAsyncDisposable
+public sealed partial class Momentum4Service : IAsyncDisposable
 {
     private readonly GaiaCommandQueue _queue;
     private readonly Momentum4Client _client;
@@ -96,13 +102,16 @@ public sealed class Momentum4Service : IAsyncDisposable
 
     public Momentum4Service(ITransport transport, CommandPolicy policy, Momentum4ServiceOptions options, ILoggerFactory loggerFactory, TimeProvider? timeProvider = null)
     {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(options.PeerConnectTimeout, TimeSpan.Zero);
         _options = options;
         _time = timeProvider ?? TimeProvider.System;
         _logger = loggerFactory.CreateLogger<Momentum4Service>();
-        _queue = new GaiaCommandQueue(transport, policy, loggerFactory.CreateLogger<GaiaCommandQueue>(), _time);
+        _queue = new GaiaCommandQueue(transport, policy, loggerFactory.CreateLogger<GaiaCommandQueue>(), _time, strictFrames: true);
         _client = new Momentum4Client(_queue);
         _dispatcher = new NotificationDispatcher(loggerFactory.CreateLogger<NotificationDispatcher>());
-        _supervisor = new ConnectionSupervisor(transport, RunSessionAsync, Store, loggerFactory.CreateLogger<ConnectionSupervisor>(), _time, options.Backoff);
+        _supervisor = new ConnectionSupervisor(transport, RunSessionAsync, Store, loggerFactory.CreateLogger<ConnectionSupervisor>(), _time, options.Backoff, options.Reconnect);
+        _queue.ProtocolFaulted += (_, _) => _supervisor.EndSession();
         _queue.NotificationReceived += OnNotification;
         _dispatcher.RefreshRequested += (_, scope) => RequestRefresh(scope);
         _queue.UnsolicitedResponseHandler = OnUnsolicitedResponse;
@@ -122,6 +131,8 @@ public sealed class Momentum4Service : IAsyncDisposable
     /// beim Wiederverbinden wieder ein. Beim ersten Verbinden nach dem Start gibt es keinen Vorher-Stand – dann nichts.
     /// </summary>
     public bool RestoreTransparencyAfterRestart { get; set; }
+
+    public Task Completion => _supervisor.Completion;
 
     public void Start() => _supervisor.Start();
 
@@ -155,176 +166,51 @@ public sealed class Momentum4Service : IAsyncDisposable
     /// bestätigten Zustand.
     /// </summary>
     public Task<NoiseControlState> SetNoiseControlModeAsync(NoiseControlMode mode, CancellationToken cancellationToken) =>
-        NoiseControlActionAsync(
-            $"Noise Control {mode}",
-            CommandsFor(mode),
-            async (before, table, ct) => await ApplyModeAsync(mode, before, table, ct),
-            after => after.Mode == mode,
-            cancellationToken);
+        LegacyControlAsync(() => SetControlNoiseModeAsync(mode, cancellationToken), snapshot => NoiseState(snapshot.Settings), state => state.NoiseControl!, "Noise control");
 
     /// <summary>
     /// Pegel 0…100 setzen; schaltet dafür auf Custom. Der Pegel ist die ANC-Stärke: 0 = am stärksten, 100 = schwächer
     /// (A/B-Hörtest Phase E, docs/protocol.md §6.9). Die Transparenz ist <see cref="NoiseControlMode.Transparency"/>.
     /// </summary>
-    public Task<NoiseControlState> SetNoiseControlLevelAsync(int level, CancellationToken cancellationToken)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(level);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(level, 100);
-        return NoiseControlActionAsync(
-            $"Pegel {level}",
-            [.. CommandsFor(NoiseControlMode.Custom), CommandCatalog.SetAncLevel],
-            async (before, table, ct) =>
-            {
-                await ApplyModeAsync(NoiseControlMode.Custom, before, table, ct);
-                if (before.Level != level || before.Mode != NoiseControlMode.Custom)
-                {
-                    await _client.SetAncLevelAsync(level, ct);
-                }
-            },
-            after => after.Mode == NoiseControlMode.Custom && after.Level == level,
-            cancellationToken);
-    }
+    public Task<NoiseControlState> SetNoiseControlLevelAsync(int level, CancellationToken cancellationToken) =>
+        LegacyControlAsync(() => SetCustomControlLevelAsync(level, cancellationToken), snapshot => NoiseState(snapshot.Settings), state => state.NoiseControl!, "ANC level");
 
     /// <summary>
     /// Transparent Hearing (<c>0x1804</c>) ein-/ausschalten. Hardware-Befund (Phase E): <c>[01]</c> schaltet die vom User
     /// gewohnte Transparenz ein und setzt den Pegel auf 100; jedes Schreiben von <c>0x1A00</c> beendet sie wieder.
     /// </summary>
     public Task<NoiseControlState> SetTransparentHearingAsync(bool on, CancellationToken cancellationToken) =>
-        NoiseControlActionAsync(
-            $"Transparent Hearing {(on ? "an" : "aus")}",
-            [CommandCatalog.SetTransparentHearingStatus],
-            async (before, _, ct) =>
-            {
-                if (before.TransparentHearing != on)
-                {
-                    await _client.SetTransparentHearingStatusAsync(on, ct);
-                }
-            },
-            after => after.TransparentHearing == on,
-            cancellationToken);
+        LegacyControlAsync(() => SetBooleanControlAsync(HeadsetBooleanControl.Transparency, on, cancellationToken), snapshot => NoiseState(snapshot.Settings), state => state.NoiseControl!, "Noise control");
 
     /// <summary>
     /// Nur ANC ein/aus (<c>0x1A04</c>), ohne Transparent Hearing oder Adaptive anzufassen – für Hardware-Tests und
     /// Diagnose. Die App nutzt <see cref="SetNoiseControlModeAsync"/>.
     /// </summary>
     public Task<NoiseControlState> SetAncEnabledAsync(bool enabled, CancellationToken cancellationToken) =>
-        NoiseControlActionAsync(
-            $"ANC {(enabled ? "an" : "aus")}",
-            [CommandCatalog.SetAncEnabled],
-            async (before, _, ct) =>
-            {
-                if (before.AncEnabled != enabled)
-                {
-                    await _client.SetAncEnabledAsync(enabled, ct);
-                }
-            },
-            after => after.AncEnabled == enabled,
-            cancellationToken);
+        LegacyControlAsync(() => SetBooleanControlAsync(HeadsetBooleanControl.AncEnabled, enabled, cancellationToken), snapshot => NoiseState(snapshot.Settings), state => state.NoiseControl!, "Noise control");
 
     /// <summary>
     /// Anti-Wind setzen. Weil jedes Schreiben von <c>0x1A00</c> Transparent Hearing beendet (Hardware-Befund Phase E),
     /// schaltet der Service es danach wieder ein, wenn der Modus vorher Transparency war – der Modus bleibt so erhalten.
     /// Bei ANC aus schaltet er es nicht wieder ein: <c>0x1804 [01]</c> ohne ANC ist nicht geprüft und wirkt dort ohnehin nicht.
     /// </summary>
-    public Task<NoiseControlState> SetAntiWindAsync(AntiWindMode antiWind, CancellationToken cancellationToken)
-    {
-        var transparencyBefore = false;
-        return NoiseControlActionAsync(
-            $"Anti-Wind {antiWind}",
-            [CommandCatalog.SetAncMode, CommandCatalog.SetTransparentHearingStatus],
-            async (before, table, ct) =>
-            {
-                transparencyBefore = before.Mode == NoiseControlMode.Transparency;
-                if (before.AntiWind == antiWind)
-                {
-                    return;
-                }
-
-                await WriteAncModeAsync(table, AncCodec.ModeAntiWind, (byte)antiWind, ct);
-                if (transparencyBefore)
-                {
-                    await _client.SetTransparentHearingStatusAsync(true, ct);
-                }
-            },
-            after => after.AntiWind == antiWind && (after.Mode == NoiseControlMode.Transparency) == transparencyBefore,
-            cancellationToken);
-    }
+    public Task<NoiseControlState> SetAntiWindAsync(AntiWindMode antiWind, CancellationToken cancellationToken) =>
+        LegacyControlAsync(() => SetIntegerControlAsync(HeadsetIntegerControl.AntiWind, (int)antiWind, cancellationToken), snapshot => NoiseState(snapshot.Settings), state => state.NoiseControl!, "Anti-wind");
 
     /// <summary>Gain eines EQ-Bands setzen (Write → Verify über <c>0x1003</c>).</summary>
     public Task<EqualizerState> SetEqBandAsync(int band, decimal gainDb, CancellationToken cancellationToken) =>
-        EqualizerActionAsync(
-            $"EQ-Band {band} auf {FormatDb(gainDb)} dB",
-            gate => gate.Equalizer,
-            [CommandCatalog.SetEqBand],
-            async (before, ct) =>
-            {
-                ValidateGain(before, band, gainDb);
-                if (before.Bands[band].GainDb != gainDb)
-                {
-                    await _client.SetEqBandAsync(band, gainDb, ct);
-                }
-            },
-            after => after.Bands[band].GainDb == gainDb,
-            cancellationToken);
+        LegacyControlAsync(() => SetControlEqBandAsync(band, gainDb, LegacyEqTopology(), cancellationToken), EqualizerStateOf, state => state.Equalizer!, "EQ band");
 
     /// <summary>
     /// Ganze EQ-Kurve setzen: Band für Band, nur geänderte Bänder. Schlägt ein Schreiben fehl, werden die schon
     /// geschriebenen Bänder in umgekehrter Reihenfolge auf den Stand davor zurückgesetzt (docs/architecture.md §8.2).
     /// </summary>
     public Task<EqualizerState> SetEqGainsAsync(IReadOnlyList<decimal> gainsDb, CancellationToken cancellationToken) =>
-        EqualizerActionAsync(
-            $"EQ-Kurve [{string.Join(" ", gainsDb.Select(FormatDb))}] dB",
-            gate => gate.Equalizer,
-            [CommandCatalog.SetEqBand],
-            async (before, ct) =>
-            {
-                if (gainsDb.Count != before.Bands.Count)
-                {
-                    throw new ArgumentException($"{before.Bands.Count} Werte erwartet, {gainsDb.Count} erhalten.", nameof(gainsDb));
-                }
-
-                for (var i = 0; i < gainsDb.Count; i++)
-                {
-                    ValidateGain(before, i, gainsDb[i]);
-                }
-
-                var written = new List<int>();
-                try
-                {
-                    for (var i = 0; i < gainsDb.Count; i++)
-                    {
-                        if (before.Bands[i].GainDb != gainsDb[i])
-                        {
-                            written.Add(i);
-                            await _client.SetEqBandAsync(i, gainsDb[i], ct);
-                        }
-                    }
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    _logger.LogWarning("EQ-Kurve: Schreiben fehlgeschlagen ({Reason}) – setze {Count} Band/Bänder zurück.", ex.Message, written.Count);
-                    await RollBackBandsAsync(before, written, ct);
-                    throw;
-                }
-            },
-            after => after.Bands.Select(b => b.GainDb).SequenceEqual(gainsDb),
-            cancellationToken);
+        LegacyControlAsync(() => ApplyControlEqualizerAsync(gainsDb, null, null, LegacyEqTopology(), cancellationToken, rollbackRejected: true), EqualizerStateOf, state => state.Equalizer!, "EQ curve");
 
     /// <summary>Bass Boost ein/aus (<c>0x1008</c>, erst ab FW 3.x, <see cref="FeatureGate.BassBoost"/>).</summary>
     public Task<EqualizerState> SetBassBoostAsync(bool enabled, CancellationToken cancellationToken) =>
-        EqualizerActionAsync(
-            $"Bass Boost {(enabled ? "an" : "aus")}",
-            gate => gate.BassBoost,
-            [CommandCatalog.SetBassBoost],
-            async (before, ct) =>
-            {
-                if (before.BassBoost != enabled)
-                {
-                    await _client.SetBassBoostAsync(enabled, ct);
-                }
-            },
-            after => after.BassBoost == enabled,
-            cancellationToken);
+        LegacyControlAsync(() => SetBooleanControlAsync(HeadsetBooleanControl.BassBoost, enabled, cancellationToken), EqualizerStateOf, state => state.Equalizer!, "Bass boost");
 
     /// <summary>
     /// Sound-Mode setzen (<c>0x0803</c>). Klanglich wirkt der EQ vermutlich nur im Mode Equalizer (docs/protocol.md §7.2).
@@ -335,146 +221,31 @@ public sealed class Momentum4Service : IAsyncDisposable
     {
         if (mode is not (SoundMode.Off or SoundMode.Equalizer or SoundMode.Podcast))
         {
-            throw new FeatureNotSupportedException($"Sound-Mode {mode}: wird noch nicht unterstützt (Vorbedingungen ungeprüft).");
+            throw new FeatureNotSupportedException("Sound Personalization is not a verified writable sound mode.");
         }
 
-        return EqualizerActionAsync(
-            $"Sound-Mode {mode}",
-            gate => gate.Equalizer,
-            [CommandCatalog.SetSoundMode],
-            async (before, ct) =>
-            {
-                if (before.SoundMode == mode)
-                {
-                    return;
-                }
-
-                await _client.SetSoundModeAsync(mode, ct);
-                for (var attempt = 0; attempt < 8 && await _client.ReadSoundModeAsync(ct) != mode; attempt++)
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(250), _time, ct);
-                }
-            },
-            after => after.SoundMode == mode,
-            cancellationToken);
+        return LegacyControlAsync(() => SetIntegerControlAsync(HeadsetIntegerControl.SoundMode, (int)mode, cancellationToken),
+            EqualizerStateOf, state => state.Equalizer!, "Sound mode");
     }
 
     /// <summary>
     /// On-Head-Erkennung, Smart Pause, Auto-Answer, Comfort Call oder Touch-Steuerung ein-/ausschalten (docs/protocol.md
     /// §6.1, §6.3, §6.7): alle lesen, nur bei Abweichung schreiben, alle zurücklesen. Das Headset meldet diese Änderungen nicht.
     /// </summary>
-    public async Task<BehaviorState> SetBehaviorAsync(BehaviorSetting setting, bool on, CancellationToken cancellationToken)
-    {
-        var description = $"{BehaviorState.NameOf(setting)} {(on ? "an" : "aus")}";
-        EnsureActionPossible(description, [Momentum4Client.SetterFor(setting)]);
-
-        await _actionGate.WaitAsync(cancellationToken);
-        try
-        {
-            var before = await _client.ReadBehaviorAsync(cancellationToken);
-            Store.Apply(new BehaviorChanged(before));
-            _logger.LogInformation("{Action}: vorher {Before}.", description, before);
-
-            if (before.Get(setting) != on)
-            {
-                await _client.SetBehaviorAsync(setting, on, cancellationToken);
-            }
-
-            var after = await _client.ReadBehaviorAsync(cancellationToken);
-            Store.Apply(new BehaviorChanged(after));
-            if (after.Get(setting) != on)
-            {
-                _logger.LogWarning("{Action}: nicht übernommen, gelesen {After}.", description, after);
-                throw new SettingNotAppliedException<BehaviorState>(description, after);
-            }
-
-            _logger.LogInformation("{Action}: bestätigt {After}.", description, after);
-            return after;
-        }
-        finally
-        {
-            _actionGate.Release();
-        }
-    }
+    public Task<BehaviorState> SetBehaviorAsync(BehaviorSetting setting, bool on, CancellationToken cancellationToken) =>
+        LegacyControlAsync(() => SetBooleanControlAsync(BooleanControlFor(setting), on, cancellationToken), snapshot => BehaviorStateOf(snapshot.Settings), state => state.Behavior!, "Behavior");
 
     /// <summary>
     /// Auto Power Off setzen (<c>0x0600 [00, s u16]</c>, docs/protocol.md §6.2), nur mit einem Wert aus
     /// <see cref="Momentum4State.AutoPowerOffChoices"/>: Andere Werte sind nicht belegt, und im Bereich <c>0x06xx</c>
     /// nimmt Unbekanntes das Headset laut [DS] offline. Write → Verify über <c>0x0601 [00]</c>.
     /// </summary>
-    public async Task<int> SetAutoPowerOffAsync(int seconds, CancellationToken cancellationToken)
-    {
-        if (!Momentum4State.AutoPowerOffChoices.Contains(seconds))
-        {
-            throw new ArgumentOutOfRangeException(nameof(seconds), seconds, $"Erlaubt sind {string.Join(", ", Momentum4State.AutoPowerOffChoices)} Sekunden.");
-        }
-
-        var description = $"Auto Power Off {(seconds == 0 ? "nie" : $"{seconds / 60} min")}";
-        EnsureActionPossible(description, [CommandCatalog.SetTimer]);
-
-        await _actionGate.WaitAsync(cancellationToken);
-        try
-        {
-            var before = await _client.ReadAutoPowerOffAsync(cancellationToken);
-            Store.Apply(new AutoPowerOffChanged(before));
-            _logger.LogInformation("{Action}: vorher {Before} s.", description, before);
-
-            if (before != seconds)
-            {
-                await _client.SetAutoPowerOffAsync(seconds, cancellationToken);
-            }
-
-            var after = await _client.ReadAutoPowerOffAsync(cancellationToken);
-            Store.Apply(new AutoPowerOffChanged(after));
-            if (after != seconds)
-            {
-                _logger.LogWarning("{Action}: nicht übernommen, gelesen {After} s.", description, after);
-                throw new SettingNotAppliedException<int>(description, after);
-            }
-
-            _logger.LogInformation("{Action}: bestätigt.", description);
-            return after;
-        }
-        finally
-        {
-            _actionGate.Release();
-        }
-    }
+    public Task<int> SetAutoPowerOffAsync(int seconds, CancellationToken cancellationToken) =>
+        LegacyControlAsync(() => SetIntegerControlAsync(HeadsetIntegerControl.AutoPowerOff, seconds, cancellationToken), snapshot => snapshot.Settings.AutoPowerOff!.Value, state => state.AutoPowerOffSeconds!.Value, "Auto power off");
 
     /// <summary>Töne und Sprachansagen setzen (<c>0x0801</c>, docs/protocol.md §6.3); Write → Verify über <c>0x0802</c>.</summary>
-    public async Task<AudioPromptMode> SetAudioPromptModeAsync(AudioPromptMode mode, CancellationToken cancellationToken)
-    {
-        var description = $"Töne & Sprachansagen {mode}";
-        EnsureActionPossible(description, [CommandCatalog.SetAudioPromptMode]);
-
-        await _actionGate.WaitAsync(cancellationToken);
-        try
-        {
-            var before = await _client.ReadAudioPromptModeAsync(cancellationToken);
-            Store.Apply(new PromptModeChanged(before));
-            _logger.LogInformation("{Action}: vorher {Before}.", description, before);
-
-            if (before != mode)
-            {
-                await _client.SetAudioPromptModeAsync(mode, cancellationToken);
-            }
-
-            var after = await _client.ReadAudioPromptModeAsync(cancellationToken);
-            Store.Apply(new PromptModeChanged(after));
-            if (after != mode)
-            {
-                _logger.LogWarning("{Action}: nicht übernommen, gelesen {After}.", description, after);
-                throw new SettingNotAppliedException<AudioPromptMode>(description, after);
-            }
-
-            _logger.LogInformation("{Action}: bestätigt.", description);
-            return after;
-        }
-        finally
-        {
-            _actionGate.Release();
-        }
-    }
+    public Task<AudioPromptMode> SetAudioPromptModeAsync(AudioPromptMode mode, CancellationToken cancellationToken) =>
+        LegacyControlAsync(() => SetIntegerControlAsync(HeadsetIntegerControl.AudioPrompts, (int)mode, cancellationToken), snapshot => (AudioPromptMode)snapshot.Settings.AudioPrompts!.Value, state => state.PromptMode!.Value, "Audio prompts");
 
     /// <summary>
     /// ANC-Modus „Comfort“ (<c>0x1A00</c> Modus 2, <c>m4.json</c>: 0 aus, 1 an). Wirkung noch ungeklärt – nur für den
@@ -486,9 +257,17 @@ public sealed class Momentum4Service : IAsyncDisposable
         var description = $"ANC-Comfort {(on ? "an" : "aus")}";
         EnsureActionPossible(description, [CommandCatalog.SetAncMode, CommandCatalog.SetTransparentHearingStatus]);
 
+        using var budget = CreateOperationBudget(cancellationToken);
+        cancellationToken = budget.Token;
         await _actionGate.WaitAsync(cancellationToken);
         try
         {
+            await RequireWritableIdentityAsync(cancellationToken);
+            if (_gate.IsMomentum5)
+            {
+                throw new FeatureNotSupportedException("ANC Comfort is not verified for MOMENTUM 5.");
+            }
+
             var (before, table) = await _client.ReadNoiseControlWithTableAsync(cancellationToken);
             Store.Apply(new NoiseControlChanged(before));
             _logger.LogInformation("{Action}: vorher {Before}, Comfort {Comfort}.", description, before, table.Comfort);
@@ -528,9 +307,17 @@ public sealed class Momentum4Service : IAsyncDisposable
         var description = $"BT-Kompatibilitätsmodus {mode}";
         EnsureActionPossible(description, [CommandCatalog.SetBtCompatibilityMode]);
 
+        using var budget = CreateOperationBudget(cancellationToken);
+        cancellationToken = budget.Token;
         await _actionGate.WaitAsync(cancellationToken);
         try
         {
+            await RequireWritableIdentityAsync(cancellationToken);
+            if (_gate.IsMomentum5)
+            {
+                throw new FeatureNotSupportedException("Bluetooth compatibility writes are not verified for MOMENTUM 5.");
+            }
+
             var before = await _client.ReadBtCompatibilityModeAsync(cancellationToken);
             _logger.LogInformation("{Action}: vorher {Before}.", description, before);
             if (before != mode)
@@ -557,83 +344,15 @@ public sealed class Momentum4Service : IAsyncDisposable
     /// Gerätenamen (localName, <c>0x2801</c>/<c>0x2802</c>, docs/protocol.md §6.11) setzen; Write → Verify. Der Name ist
     /// roher UTF-8; leer wird abgelehnt. Am M4 (FW 3.38.3) ohne Neustart.
     /// </summary>
-    public async Task<string> SetDeviceNameAsync(string name, CancellationToken cancellationToken)
-    {
-        name = name.Trim();
-        if (name.Length == 0)
-        {
-            throw new ArgumentException("Der Name darf nicht leer sein.", nameof(name));
-        }
-
-        var description = $"Gerätename „{name}“";
-        EnsureActionPossible(description, [CommandCatalog.SetLocalName]);
-
-        await _actionGate.WaitAsync(cancellationToken);
-        try
-        {
-            var before = await _client.ReadDeviceNameAsync(cancellationToken);
-            Store.Apply(new DeviceNameChanged(before));
-            _logger.LogInformation("{Action}: vorher „{Before}“.", description, before);
-
-            if (before != name)
-            {
-                await _client.SetDeviceNameAsync(name, cancellationToken);
-            }
-
-            var after = await _client.ReadDeviceNameAsync(cancellationToken);
-            Store.Apply(new DeviceNameChanged(after));
-            if (after != name)
-            {
-                _logger.LogWarning("{Action}: nicht übernommen, gelesen „{After}“.", description, after);
-                throw new SettingNotAppliedException<string>(description, after);
-            }
-
-            _logger.LogInformation("{Action}: bestätigt.", description);
-            return after;
-        }
-        finally
-        {
-            _actionGate.Release();
-        }
-    }
+    public Task<string> SetDeviceNameAsync(string name, CancellationToken cancellationToken) =>
+        LegacyControlAsync(() => RenameControlAsync(name, cancellationToken), snapshot => snapshot.DeviceName!, state => state.DeviceName!, "Device name");
 
     /// <summary>
     /// Automatische Pause bei Transparenz setzen (<c>0x1800</c>, docs/protocol.md §6.8): Musik anhalten, wenn
     /// Transparenz aktiv ist. Write → Verify über <c>0x1801</c>. Entspricht dem Smart-Control-Schalter „Automatische Pause“.
     /// </summary>
-    public async Task<bool> SetAutoPauseAsync(bool on, CancellationToken cancellationToken)
-    {
-        var description = $"Automatische Pause {(on ? "an" : "aus")}";
-        EnsureActionPossible(description, [CommandCatalog.SetTransparentHearingMode]);
-
-        await _actionGate.WaitAsync(cancellationToken);
-        try
-        {
-            var before = await _client.ReadAutoPauseAsync(cancellationToken);
-            Store.Apply(new AutoPauseChanged(before));
-            _logger.LogInformation("{Action}: vorher {Before}.", description, before);
-
-            if (before != on)
-            {
-                await _client.SetAutoPauseAsync(on, cancellationToken);
-            }
-
-            var after = await _client.ReadAutoPauseAsync(cancellationToken);
-            Store.Apply(new AutoPauseChanged(after));
-            if (after != on)
-            {
-                _logger.LogWarning("{Action}: nicht übernommen, gelesen {After}.", description, after);
-                throw new SettingNotAppliedException<bool>(description, after);
-            }
-
-            _logger.LogInformation("{Action}: bestätigt.", description);
-            return after;
-        }
-        finally
-        {
-            _actionGate.Release();
-        }
-    }
+    public Task<bool> SetAutoPauseAsync(bool on, CancellationToken cancellationToken) =>
+        LegacyControlAsync(() => SetBooleanControlAsync(HeadsetBooleanControl.PauseOnTransparency, on, cancellationToken), snapshot => snapshot.Settings.PauseOnTransparency!.Value, state => state.AutoPauseOnTransparency!.Value, "Auto pause");
 
     /// <summary>
     /// Gekoppeltes Gerät verbinden (docs/architecture.md §8.5). Vorher: Liste frisch lesen, am Platz
@@ -642,180 +361,8 @@ public sealed class Momentum4Service : IAsyncDisposable
     /// Erfolg nur, wenn das Ziel (per Name) verbunden ist und dieser PC verbunden bleibt. Kein Wiederholversuch;
     /// getrennt wird nie (<c>0x1403</c> ist gesperrt).
     /// </summary>
-    public async Task<MultipointState> ConnectPeerAsync(int index, string expectedName, CancellationToken cancellationToken)
-    {
-        var description = $"Verbinden mit Platz {index} („{expectedName}“)";
-        EnsureActionPossible(description, [CommandCatalog.ConnectPairedDevice, CommandCatalog.GetPairedDeviceStatus]);
-
-        await _actionGate.WaitAsync(cancellationToken);
-        try
-        {
-            var before = await _client.ReadMultipointAsync(cancellationToken);
-            Store.Apply(new MultipointChanged(before));
-            var target = before.Devices.FirstOrDefault(d => d.Index == index);
-            if (target is null || target.Name != expectedName)
-            {
-                throw new PeerActionRefusedException($"{description}: Dort steht jetzt „{target?.Name ?? "nichts"}“ – die Liste hat sich geändert.");
-            }
-
-            if (target.IsThisComputer)
-            {
-                throw new PeerActionRefusedException($"{description}: Das ist dieser PC.");
-            }
-
-            if (target.Connected)
-            {
-                _logger.LogInformation("{Action}: ist schon verbunden.", description);
-                return before;
-            }
-
-            var connectedCount = before.Devices.Count(d => d.Connected);
-            if (before.MaxConnections is { } max && connectedCount >= max)
-            {
-                throw new PeerActionRefusedException($"{description}: Schon {connectedCount} von {max} Geräten verbunden – erst eins am Gerät selbst trennen.");
-            }
-
-            _logger.LogInformation("{Action}: vorher {Devices}.", description, Describe(before));
-            await _client.ConnectPeerAsync(index, cancellationToken);
-
-            var started = _time.GetTimestamp();
-            while (!await _client.GetPeerConnectedAsync(index, cancellationToken) && _time.GetElapsedTime(started) < _options.PeerConnectTimeout)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(300), _time, cancellationToken);
-            }
-
-            var after = await _client.ReadMultipointAsync(cancellationToken);
-            Store.Apply(new MultipointChanged(after));
-            var ok = after.Devices.Any(d => d.Name == expectedName && d.Connected) && after.Devices.Any(d => d.IsThisComputer && d.Connected);
-            if (!ok)
-            {
-                _logger.LogWarning("{Action}: nicht bestätigt, gelesen {Devices}.", description, Describe(after));
-                throw new SettingNotAppliedException<string>(description, Describe(after));
-            }
-
-            _logger.LogInformation("{Action}: bestätigt nach {Ms} ms, {Devices}.", description, (int)_time.GetElapsedTime(started).TotalMilliseconds, Describe(after));
-            return after;
-        }
-        finally
-        {
-            _actionGate.Release();
-        }
-
-        static string Describe(MultipointState s) =>
-            string.Join(", ", s.Devices.Select(d => $"#{d.Index} {d.Name}{(d.IsThisComputer ? " (dieser PC)" : string.Empty)}{(d.Connected ? " verbunden" : string.Empty)}"));
-    }
-
-    /// <summary>
-    /// Gemeinsamer Ablauf aller Noise-Control-Aktionen (docs/architecture.md §8.2): nacheinander, nur bei Verbindung,
-    /// Zustand frisch lesen, schreiben, zurücklesen, Store aktualisieren, Ziel prüfen.
-    /// </summary>
-    private async Task<NoiseControlState> NoiseControlActionAsync(
-        string description,
-        IReadOnlyList<CommandDescriptor> mayWrite,
-        Func<NoiseControlState, AncModeTable, CancellationToken, Task> write,
-        Func<NoiseControlState, bool> reached,
-        CancellationToken cancellationToken)
-    {
-        EnsureActionPossible(description, mayWrite);
-
-        await _actionGate.WaitAsync(cancellationToken);
-        try
-        {
-            var (before, table) = await _client.ReadNoiseControlWithTableAsync(cancellationToken);
-            Store.Apply(new NoiseControlChanged(before));
-            _logger.LogInformation("{Action}: vorher {Before}.", description, before);
-
-            await write(before, table, cancellationToken);
-
-            var after = await _client.ReadNoiseControlAsync(cancellationToken);
-            Store.Apply(new NoiseControlChanged(after));
-            if (!reached(after))
-            {
-                _logger.LogWarning("{Action}: nicht übernommen, gelesen {After}.", description, after);
-                throw new SettingNotAppliedException<NoiseControlState>(description, after);
-            }
-
-            _logger.LogInformation("{Action}: bestätigt {After}.", description, after);
-            return after;
-        }
-        finally
-        {
-            _actionGate.Release();
-        }
-    }
-
-    /// <summary>
-    /// Gemeinsamer Ablauf der EQ-Aktionen: wie <see cref="NoiseControlActionAsync"/>, dazu Firmware-Prüfung. Gelesen
-    /// werden nur die veränderlichen Werte (Gains über <c>0x1003</c>, Bass Boost, Sound-Mode); Bandanzahl, Bereich und
-    /// Frequenzen kommen aus dem zuletzt gelesenen Zustand.
-    /// </summary>
-    private async Task<EqualizerState> EqualizerActionAsync(
-        string description,
-        Func<FeatureGate, bool> supported,
-        IReadOnlyList<CommandDescriptor> mayWrite,
-        Func<EqualizerState, CancellationToken, Task> write,
-        Func<EqualizerState, bool> reached,
-        CancellationToken cancellationToken)
-    {
-        EnsureActionPossible(description, mayWrite);
-        if (!supported(_gate))
-        {
-            throw new FeatureNotSupportedException($"{description}: von Firmware {_gate.Firmware?.ToString() ?? "(unbekannt)"} nicht unterstützt.");
-        }
-
-        await _actionGate.WaitAsync(cancellationToken);
-        try
-        {
-            var before = await ReadEqualizerValuesAsync(description, cancellationToken);
-            _logger.LogInformation("{Action}: vorher {Before}.", description, before);
-
-            await write(before, cancellationToken);
-
-            var after = await ReadEqualizerValuesAsync(description, cancellationToken);
-            if (!reached(after))
-            {
-                _logger.LogWarning("{Action}: nicht übernommen, gelesen {After}.", description, after);
-                throw new SettingNotAppliedException<EqualizerState>(description, after);
-            }
-
-            _logger.LogInformation("{Action}: bestätigt {After}.", description, after);
-            return after;
-        }
-        finally
-        {
-            _actionGate.Release();
-        }
-    }
-
-    private async Task<EqualizerState> ReadEqualizerValuesAsync(string description, CancellationToken cancellationToken)
-    {
-        var bandCount = Store.Current.Equalizer?.Bands.Count
-            ?? throw new InvalidOperationException($"{description}: EQ-Konfiguration noch nicht gelesen.");
-        Store.Apply(new EqGainsChanged(await _client.ReadEqGainsAsync(bandCount, cancellationToken)));
-        if (_gate.BassBoost)
-        {
-            Store.Apply(new BassBoostChanged(await _client.ReadBassBoostAsync(cancellationToken)));
-        }
-
-        Store.Apply(new SoundModeChanged(await _client.ReadSoundModeAsync(cancellationToken)));
-        return Store.Current.Equalizer!;
-    }
-
-    private async Task RollBackBandsAsync(EqualizerState before, List<int> written, CancellationToken cancellationToken)
-    {
-        for (var i = written.Count - 1; i >= 0; i--)
-        {
-            var band = written[i];
-            try
-            {
-                await _client.SetEqBandAsync(band, before.Bands[band].GainDb, cancellationToken);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                _logger.LogError("EQ-Rollback: Band {Band} konnte nicht zurückgesetzt werden ({Reason}).", band, ex.Message);
-            }
-        }
-    }
+    public async Task<MultipointState> ConnectPeerAsync(int index, string expectedName, CancellationToken cancellationToken) =>
+        MultipointStateOf(await ConnectLegacyPeerAsync(index, expectedName, cancellationToken));
 
     private static void ValidateGain(EqualizerState state, int band, decimal gainDb)
     {
@@ -832,7 +379,7 @@ public sealed class Momentum4Service : IAsyncDisposable
     /// <summary>Nur bei Verbindung, und jeder Befehl, den die Aktion schreiben könnte, muss erlaubt sein – sonst bliebe sie halb ausgeführt.</summary>
     private void EnsureActionPossible(string description, IReadOnlyList<CommandDescriptor> mayWrite)
     {
-        if (Store.Current.Connection != ConnectionState.Connected)
+        if (Store.Current.Connection != ConnectionState.Connected || !_queue.IsConnected)
         {
             throw new HeadsetUnavailableException($"{description}: Headset nicht verbunden ({Store.Current.Connection}).");
         }
@@ -902,13 +449,18 @@ public sealed class Momentum4Service : IAsyncDisposable
 
     private async Task WriteAncModeAsync(AncModeTable table, byte modeId, byte value, CancellationToken ct)
     {
-        var format = AncWriteFormat ?? Protocol.Features.AncModeWriteFormat.FullTable;
+        if (_gate.IsMomentum5 && (modeId == AncCodec.ModeComfort || (modeId == AncCodec.ModeAntiWind && value > 1)))
+        {
+            throw new FeatureNotSupportedException("ANC value is not verified for MOMENTUM 5.");
+        }
+
+        var format = _gate.IsMomentum5 ? Protocol.Features.AncModeWriteFormat.SinglePair : AncWriteFormat ?? Protocol.Features.AncModeWriteFormat.FullTable;
         try
         {
             await _client.SetAncModeAsync(table, modeId, value, format, ct);
             _ancWriteFormat = format;
         }
-        catch (GaiaErrorException ex) when (AncWriteFormat is null && ex.Reason == 0x05)
+        catch (GaiaErrorException ex) when (!_gate.IsMomentum5 && AncWriteFormat is null && ex.Reason == 0x05)
         {
             var other = format == Protocol.Features.AncModeWriteFormat.FullTable
                 ? Protocol.Features.AncModeWriteFormat.SinglePair
@@ -922,27 +474,38 @@ public sealed class Momentum4Service : IAsyncDisposable
     private async Task RunSessionAsync(CancellationToken session)
     {
         _consecutiveTimeouts = 0;
+        _controlSnapshot = null;
 
         // Letzter bestätigter Stand der vorigen Sitzung (der Store behält ihn über die Trennung hinweg).
         var modeBefore = Store.Current.NoiseControl?.Mode;
 
         var model = await _client.GetModelIdAsync(session);
         var firmware = await _client.GetFirmwareVersionAsync(session);
-        _gate = new FeatureGate(firmware);
+        _gate = new FeatureGate(firmware, model);
         Store.Apply(new DeviceIdentified(new DeviceInfo(model, firmware)));
         _logger.LogInformation("Headset: {Model}, Firmware {Firmware}.", model, firmware);
-        try
+        if (_options.ReadSerialNumber)
         {
-            Store.Apply(new SerialNumberRead(await _client.ReadSerialNumberAsync(session)));
-        }
-        catch (Exception ex) when (ex is ProtocolFormatException or GaiaErrorException or TimeoutException)
-        {
-            _logger.LogWarning("Seriennummer nicht gelesen: {Message}", ex.Message);
+            try
+            {
+                Store.Apply(new SerialNumberRead(await _client.ReadSerialNumberAsync(session)));
+            }
+            catch (Exception ex) when (ex is ProtocolFormatException or GaiaErrorException or TimeoutException)
+            {
+                _logger.LogWarning("Seriennummer nicht gelesen: {Message}", ex.Message);
+            }
         }
 
         if (_options.RegisterNotifications)
         {
             await RegisterNotificationsAsync(session);
+        }
+
+        if (!_options.EnablePolling)
+        {
+            Store.Apply(new ConnectionChanged(ConnectionState.Connected));
+            await Task.Delay(Timeout.InfiniteTimeSpan, _time, session);
+            return;
         }
 
         await RefreshAsync(RefreshScope.All, session);
@@ -1035,6 +598,19 @@ public sealed class Momentum4Service : IAsyncDisposable
     /// der Bereich bleibt beim letzten bestätigten Stand. Wiederholte Timeouts beenden die Sitzung (Reconnect).
     /// </summary>
     private async Task RefreshAsync(RefreshScope scope, CancellationToken session)
+    {
+        await _actionGate.WaitAsync(session);
+        try
+        {
+            await RefreshLockedAsync(scope, session);
+        }
+        finally
+        {
+            _actionGate.Release();
+        }
+    }
+
+    private async Task RefreshLockedAsync(RefreshScope scope, CancellationToken session)
     {
         await Step(RefreshScope.Battery, async () => Store.Apply(new BatteryChanged(await _client.GetBatteryLevelAsync(session))));
         await Step(RefreshScope.NoiseControl, async () => Store.Apply(new NoiseControlChanged(await _client.ReadNoiseControlAsync(session))));

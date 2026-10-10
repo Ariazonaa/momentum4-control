@@ -107,7 +107,7 @@ public static class AncCodec
     /// <summary><c>0x1A01</c> → <c>[id, value, id, value, …]</c>.</summary>
     public static AncModeTable DecodeModes(ReadOnlySpan<byte> payload)
     {
-        if (payload.Length < 2 || payload.Length % 2 != 0)
+        if (payload.Length < 2 || payload.Length > 254 || payload.Length % 2 != 0)
         {
             throw new ProtocolFormatException("ANC-Modi: Paare aus (ID, Wert) erwartet", payload);
         }
@@ -119,6 +119,11 @@ public static class AncCodec
         for (var i = 0; i < payload.Length; i += 2)
         {
             var (id, value) = (payload[i], payload[i + 1]);
+            if (pairs.Any(pair => pair.Item1 == id))
+            {
+                throw new ProtocolFormatException("Duplicate ANC mode", payload);
+            }
+
             pairs.Add((id, value));
             switch (id)
             {

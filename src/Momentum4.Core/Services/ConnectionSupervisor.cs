@@ -26,6 +26,7 @@ public sealed class ConnectionSupervisor : IAsyncDisposable
     private readonly ILogger _logger;
     private readonly TimeProvider _time;
     private readonly IReadOnlyList<TimeSpan> _backoff;
+    private readonly bool _reconnect;
     private CancellationTokenSource? _stop;
     private CancellationTokenSource? _session;
     private Task? _loop;
@@ -35,14 +36,28 @@ public sealed class ConnectionSupervisor : IAsyncDisposable
     /// Läuft, solange die Verbindung steht (Initialisierung, danach Polling). Das Token wird bei Verbindungsverlust
     /// oder Stopp abgebrochen; eine Ausnahme beendet die Sitzung und führt zum Reconnect.
     /// </param>
-    public ConnectionSupervisor(ITransport transport, Func<CancellationToken, Task> runSession, StateStore store, ILogger logger, TimeProvider? timeProvider = null, IReadOnlyList<TimeSpan>? backoff = null)
+    public ConnectionSupervisor(ITransport transport, Func<CancellationToken, Task> runSession, StateStore store, ILogger logger, TimeProvider? timeProvider = null, IReadOnlyList<TimeSpan>? backoff = null, bool reconnect = true)
     {
+        _reconnect = reconnect;
         _transport = transport;
         _runSession = runSession;
         _store = store;
         _logger = logger;
         _time = timeProvider ?? TimeProvider.System;
         _backoff = backoff is { Count: > 0 } ? backoff : DefaultBackoff;
+    }
+
+    public Task Completion => _loop ?? Task.CompletedTask;
+
+    internal void EndSession()
+    {
+        try
+        {
+            Volatile.Read(ref _session)?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
     }
 
     public void Start()
@@ -136,7 +151,7 @@ public sealed class ConnectionSupervisor : IAsyncDisposable
             }
 
             await DisconnectQuietlyAsync();
-            if (stop.IsCancellationRequested)
+            if (stop.IsCancellationRequested || !_reconnect)
             {
                 break;
             }

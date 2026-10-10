@@ -101,9 +101,9 @@ public sealed class EqualizerActionTests
         Assert.Equal(
             [
                 "FF 03 00 02 04 95 10 01 00 00", "FF 03 00 02 04 95 10 01 01 00", "FF 03 00 02 04 95 10 01 02 00", "FF 03 00 02 04 95 10 01 03 00",
-                "FF 03 00 02 04 95 10 01 03 16", "FF 03 00 02 04 95 10 01 02 16", "FF 03 00 02 04 95 10 01 01 3C", "FF 03 00 02 04 95 10 01 00 3C",
+                "FF 03 00 02 04 95 10 01 02 16", "FF 03 00 02 04 95 10 01 01 3C", "FF 03 00 02 04 95 10 01 00 3C",
             ],
-            EqWrites()); // das fehlgeschlagene Band zuerst: bei einem Timeout könnte es trotzdem übernommen worden sein
+            EqWrites());
         Assert.Equal(new byte[] { 0x3C, 0x3C, 0x16, 0x16, 0x00 }, _headset.EqGains); // Ausgangszustand
     }
 

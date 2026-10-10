@@ -27,7 +27,7 @@ public static class UserEqCodec
     /// <summary><c>0x1000</c> → <c>[bands, min i8, max i8, (weitere Bytes …)]</c>.</summary>
     public static EqConfig DecodeConfig(ReadOnlySpan<byte> payload)
     {
-        if (payload.Length < 3 || payload[0] == 0 || (sbyte)payload[1] >= (sbyte)payload[2])
+        if (payload.Length < 3 || payload[0] is 0 or > 16 || (sbyte)payload[1] >= (sbyte)payload[2])
         {
             throw new ProtocolFormatException("EQ-Konfiguration: mindestens [Bänder > 0, min < max] erwartet", payload);
         }

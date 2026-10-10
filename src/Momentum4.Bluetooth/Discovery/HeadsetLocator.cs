@@ -10,10 +10,6 @@ using Windows.Devices.Enumeration;
 
 namespace Momentum4.Bluetooth.Discovery;
 
-/// <summary>
-/// Sucht unter den gekoppelten Bluetooth-Geräten nach MOMENTUM-4-Headsets. Ein gültiger Kandidat braucht den
-/// passenden Namen <b>und</b> den GAIA-Dienst; das Headset liefert keine VID/PID (docs/research.md §3).
-/// </summary>
 public sealed class HeadsetLocator(ILogger<HeadsetLocator> logger) : IHeadsetLocator
 {
     public async Task<IReadOnlyList<HeadsetCandidate>> FindAsync(CancellationToken cancellationToken)
@@ -25,7 +21,8 @@ public sealed class HeadsetLocator(ILogger<HeadsetLocator> logger) : IHeadsetLoc
         var candidates = new List<HeadsetCandidate>();
         foreach (var info in infos)
         {
-            if (!info.Name.Contains(ProtocolConstants.DeviceNameMarker, StringComparison.OrdinalIgnoreCase))
+            if (!info.Name.Contains(ProtocolConstants.DeviceNameMarker, StringComparison.OrdinalIgnoreCase)
+                && !info.Name.Contains("MOMENTUM 5", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }

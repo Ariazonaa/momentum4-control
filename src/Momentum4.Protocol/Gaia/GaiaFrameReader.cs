@@ -27,8 +27,10 @@ public sealed record GaiaReadResult(IReadOnlyList<GaiaFrame> Frames, IReadOnlyLi
 /// mehrere Frames pro Read, synchronisiert auf <c>FF</c> neu, akzeptiert Version 1/3/4, wertet die Flags
 /// 0x01 (XOR-Checksumme) und 0x02 (2-Byte-Länge) aus. Nicht threadsicher – ein Reader pro Empfangsstrom.
 /// </summary>
-public sealed class GaiaFrameReader
+public sealed class GaiaFrameReader(bool strict = false)
 {
+    public const int MaxBufferedBytes = 8192;
+
     public const int MaxPayloadShortLength = 255;
     public const int MaxPayloadLongLength = 4096;
 
@@ -44,6 +46,12 @@ public sealed class GaiaFrameReader
 
     public GaiaReadResult Push(ReadOnlySpan<byte> data)
     {
+        if (data.Length > MaxBufferedBytes - _buffer.Count)
+        {
+            _buffer.Clear();
+            throw new ProtocolFormatException("GAIA buffer limit exceeded", []);
+        }
+
         _buffer.AddRange(data);
 
         var frames = new List<GaiaFrame>();
@@ -131,6 +139,12 @@ public sealed class GaiaFrameReader
 
     private GaiaReaderDiagnostic Discard(int count, GaiaReaderDiagnosticKind kind, string message)
     {
+        if (strict)
+        {
+            _buffer.Clear();
+            throw new ProtocolFormatException($"Invalid GAIA stream: {kind}", []);
+        }
+
         var bytes = _buffer.GetRange(0, count).ToArray();
         _buffer.RemoveRange(0, count);
         return new GaiaReaderDiagnostic(kind, bytes, $"{message}: {count} Byte verworfen");

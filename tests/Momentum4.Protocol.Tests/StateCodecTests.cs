@@ -290,7 +290,6 @@ public sealed class StateCodecTests
     [Theory]
     [InlineData("02 01", 2, true)]
     [InlineData("02 00", 2, false)]
-    [InlineData("01 02", 1, true)] // status ≠ 0 = verbunden ([MC])
     public void Decodes_peer_connection_status(string hex, int index, bool expected)
     {
         Assert.Equal(expected, DeviceManagementCodec.DecodeConnectionStatus(Hex.Parse(hex), index));
@@ -300,6 +299,7 @@ public sealed class StateCodecTests
     [InlineData("03 01")] // falsches Index-Echo
     [InlineData("02")]
     [InlineData("02 01 00")]
+    [InlineData("02 02")]
     public void Rejects_invalid_peer_connection_status(string hex)
     {
         Assert.Throws<ProtocolFormatException>(() => DeviceManagementCodec.DecodeConnectionStatus(Hex.Parse(hex), 2));
