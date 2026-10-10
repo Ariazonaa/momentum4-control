@@ -12,7 +12,10 @@ def main():
         import gi
         from .gui import main as gui_main
     except ImportError as error:
-        print(f'Missing dependency: {error}\nFedora/Nobara: sudo dnf install python3-pyside6 python3-dbus python3-gobject', file=sys.stderr)
+        print(f'Missing dependency: {error}\n'
+              '  Debian/Ubuntu: sudo apt install python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets python3-dbus python3-gi\n'
+              '  Fedora:        sudo dnf install python3-pyside6 python3-dbus python3-gobject\n'
+              '  Arch:          sudo pacman -S pyside6 python-dbus python-gobject', file=sys.stderr)
         return 1
     return gui_main([sys.argv[0]], minimized=args.minimized)
 

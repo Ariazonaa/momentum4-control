@@ -45,4 +45,51 @@ jobs:
       - name: Validate desktop entry and shell wrappers
         run: |
           desktop-file-validate linux/assets/momentum-control.desktop
-          sh -n linux/build.sh linux/install.sh linux/uninstall.sh
+          sh -n linux/build.sh linux/install.sh linux/uninstall.sh linux/package.sh
+      - name: Pack release archive
+        run: ./linux/package.sh ci "$RUNNER_TEMP/dist"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-archive
+          path: ${{ runner.temp }}/dist/*
+          retention-days: 7
+
+  # Installs the packed archive on plain distribution images with only the distribution's own packages.
+  distro-install:
+    name: Install archive (${{ matrix.image }})
+    needs: linux-desktop
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: ubuntu:24.04
+            setup: apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets python3-dbus python3-gi
+          - image: debian:13
+            setup: apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets python3-dbus python3-gi
+          - image: fedora:latest
+            setup: dnf install -y tar gzip python3-pyside6 python3-dbus python3-gobject
+          - image: archlinux:latest
+            setup: pacman -Syu --noconfirm pyside6 python-dbus python-gobject
+    steps:
+      - name: Install distribution packages
+        run: ${{ matrix.setup }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-archive
+      - name: Install, start and uninstall
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          set -eu
+          tar -xzf Momentum4Control-ci-linux-x64.tar.gz
+          cd momentum-control-linux-ci
+          ./install.sh
+          app="$HOME/.local/share/momentum4-control-linux"
+          "$app/core/momentum-core-host" --version
+          "$HOME/.local/bin/momentumctl" --help
+          /usr/bin/python3 -c "import sys; sys.path.insert(0, sys.argv[1]); import momentum_control.gui" "$app"
+          ./uninstall.sh
+          test ! -e "$app"

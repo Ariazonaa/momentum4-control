@@ -11,7 +11,7 @@ Not affiliated with Sennheiser or Sonova.
 | | Windows app | Linux companion |
 |---|---|---|
 | Frontend | WinUI 3 app with tray icon, plus the `m4ctl` command line | Qt app `momentum-control`, plus the `momentumctl` command line |
-| How to get it | Installer or portable zip from the releases | Build and install from source, see [`linux/README.md`](linux/README.md) |
+| How to get it | Installer or portable zip from the releases | `tar.gz` from the releases (x64, arm64) or built from source, see [`linux/README.md`](linux/README.md) |
 | MOMENTUM 4 | Checked on a real headset, firmware 3.37.3 and 3.38.3 | Same commands and firmware gates through the shared core; the Linux hardware checks were done with a MOMENTUM 5 |
 | MOMENTUM 5 | The shared core recognises it, but nobody has tested it on Windows yet, and the M5-only controls have no UI here | Checked on a real headset, firmware 6.21.5 (model M5AEBT); any other firmware is read-only |
 | BTD 700 dongle | Not supported | USB status and codec selection; the firmware updater is experimental and flashing was never verified on hardware |
@@ -58,9 +58,8 @@ exception is Transparent Hearing, which is always off right after the headset po
 
 ## Installation
 
-Each release has two builds. Both are self-contained, so you don't need a .NET runtime or the Windows App SDK.
-The releases only contain the Windows app; the Linux companion is installed from source as described in
-[`linux/README.md`](linux/README.md).
+Each release has two Windows builds. Both are self-contained, so you don't need a .NET runtime or the Windows App SDK.
+The Linux companion is attached as a `tar.gz`; how to install it is described in [`linux/README.md`](linux/README.md).
 
 **Installer** (`Momentum4Control-Setup-<version>.exe`): just run it. It installs per user without admin rights, adds a
 Start-menu shortcut, can enable autostart, and registers a normal uninstaller under *Apps & features*.
@@ -136,7 +135,7 @@ The app only sends commands from the catalog that were verified on hardware. The
 deleting pairings) are blocked in every policy. A debug build adds a read-only protocol inspector under Settings →
 Advanced. The workflows in [`.github/workflows/`](.github/workflows/) run the tests on Linux and the whole solution
 (build, tests, format, Native AOT) on Windows; `linux-app.yml` builds the Linux helper and runs the Linux tests;
-`release.yml` builds the installer and portable zip on a `v*` tag.
+`release.yml` builds the installer, the portable zip and the Linux archives on a `v*` tag.
 
 ## Privacy
 

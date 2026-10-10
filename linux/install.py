@@ -18,6 +18,9 @@ MAX_FILE_BYTES = 2 * 1024 * 1024
 MODULES = ('__init__.py', '__main__.py', 'backend.py', 'cli.py', 'gui.py', 'protocol.py', 'dongle.py', 'firmware.py', 'firmware_update.py',
            'preferences.py', 'desktop.py', 'i18n.py', 'updates.py', 'sound_zones.py', 'sound_check.py',
            'core_proxy.py', 'bluez.py', 'hidraw.py', 'models.py', 'errors.py')
+DEPENDENCIES = '''  Debian/Ubuntu: sudo apt install python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets python3-dbus python3-gi
+  Fedora:        sudo dnf install python3-pyside6 python3-dbus python3-gobject
+  Arch:          sudo pacman -S pyside6 python-dbus python-gobject'''
 ALLOWED = {
     *(str(APP / 'momentum_control' / module) for module in MODULES),
     str(APP / 'install.py'), str(APP / 'README.md'), str(APP / 'LICENSE'),
@@ -93,7 +96,7 @@ try:
     {entry}
     raise SystemExit(main())
 except ImportError as error:
-    print("Missing dependency: " + str(error) + "\\nInstall python3-pyside6 python3-dbus python3-gobject (Fedora/Nobara), then retry.", file=sys.stderr)
+    print("Missing dependency: " + str(error) + "\\n" + {DEPENDENCIES!r}, file=sys.stderr)
     raise SystemExit(1)
 '''.encode()
 
@@ -231,7 +234,7 @@ def replace_files(prefix, payload, removed=()):
 def install(prefix):
     check = subprocess.run(['/usr/bin/python3', '-c', 'import PySide6, dbus, gi'], capture_output=True, text=True)
     if check.returncode:
-        raise ValueError('Missing Python dependencies. On Fedora/Nobara: sudo dnf install python3-pyside6 python3-dbus python3-gobject')
+        raise ValueError('Missing Python dependencies (PySide6, dbus-python, PyGObject) for /usr/bin/python3.\n' + DEPENDENCIES)
     old = current_manifest(prefix) or {}
     payload = payloads(prefix)
     for relative in payload:
