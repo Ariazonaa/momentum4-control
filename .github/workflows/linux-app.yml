@@ -1,0 +1,48 @@
+name: Linux companion
+
+on:
+  push:
+    branches: [main]
+    paths: ['linux/**', 'src/Momentum4.Core*/**', 'src/Momentum4.Protocol/**', 'tests/Momentum4.Core*/**', 'tests/Momentum4.Protocol.Tests/**', 'Directory.*.props', 'global.json', '.github/workflows/linux-app.yml']
+  pull_request:
+    paths: ['linux/**', 'src/Momentum4.Core*/**', 'src/Momentum4.Protocol/**', 'tests/Momentum4.Core*/**', 'tests/Momentum4.Protocol.Tests/**', 'Directory.*.props', 'global.json', '.github/workflows/linux-app.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-desktop:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONPATH: linux:${{ runner.temp }}/momentum-deps
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip python3-dbus python3-gi gir1.2-glib-2.0 desktop-file-utils libegl1
+          /usr/bin/python3 -m pip install --target "$RUNNER_TEMP/momentum-deps" 'PySide6==6.11.2'
+      - name: Build self-contained shared core
+        run: ./linux/build.sh
+      - name: Shared core host tests
+        run: |
+          dotnet restore tests/Momentum4.CoreHost.Tests/Momentum4.CoreHost.Tests.csproj --configfile linux/NuGet.Config
+          dotnet test --project tests/Momentum4.CoreHost.Tests/Momentum4.CoreHost.Tests.csproj --configuration Release --no-restore
+      - name: Linux adapter, CLI, desktop and installer tests
+        run: /usr/bin/python3 -m unittest discover -s linux/tests -v
+      - name: Compile Python sources
+        run: /usr/bin/python3 -m py_compile linux/momentum_control/*.py linux/install.py
+      - name: Validate desktop entry and shell wrappers
+        run: |
+          desktop-file-validate linux/assets/momentum-control.desktop
+          sh -n linux/build.sh linux/install.sh linux/uninstall.sh

@@ -5,6 +5,8 @@ Unofficial desktop app for the Sennheiser MOMENTUM 4 Wireless. It talks to the h
 
 Not affiliated with Sennheiser or Sonova.
 
+A native **Linux companion** is available in [`linux/`](linux/README.md), with a Qt desktop app (`momentum-control`) and CLI (`momentumctl`). Build its self-contained backend with `./linux/build.sh`, then install per user with `./linux/install.sh`. Windows and Linux share the C# device core; their native frontends remain separate. See [the architecture and feature guide](docs/architecture.md). MOMENTUM 5 has a limited, hardware-verified control profile for firmware 6.21.5; other firmware is read-only. The Linux app also reports BTD 700 USB audio status and offers explicit official firmware checks plus an experimental native updater; physical flashing/recovery have not been verified. The observed dongle/public latest are both 3.11.0, with no update or flash performed. See the Linux guide for its scoped USB permissions and the separate PC Bluetooth connection needed for headset controls alongside a BTD 700. The features and installation instructions below describe the Windows app.
+
 ![Main window](assets/main-window.png)
 
 The interface is English or German. It follows your Windows display language and you can switch it in the settings.
@@ -99,7 +101,7 @@ export is anonymised.
 
 ```powershell
 dotnet build Momentum4Control.slnx
-dotnet test --solution Momentum4Control.slnx      # ~380 tests, replayed against captures from a real headset
+dotnet test --solution Momentum4Control.slnx      # includes shared device and captured-protocol tests
 .\tools\publish-app.ps1                           # Native AOT release -> %LOCALAPPDATA%\Momentum4Control.build\publish\app
 .\tools\make-release.ps1                          # setup.exe + portable.zip (needs Inno Setup 6)
 ```
@@ -108,7 +110,8 @@ You need the [.NET SDK 10.0.401+](https://dotnet.microsoft.com/download) (pinned
 Studio Build Tools with "Desktop development with C++" for the Native AOT build.
 
 The projects: `Momentum4.Protocol` (framing, codecs, the command catalog), `Momentum4.Core` (queue, state, service),
-`Momentum4.Bluetooth` (WinRT RFCOMM), `Momentum4.App` (WinUI 3), and `tools/Momentum4.Poc` (`m4poc`, a command line
+`Momentum4.Bluetooth` (WinRT RFCOMM), `Momentum4.App` (WinUI 3), `Momentum4.CoreHost` (private Linux process bridge),
+`linux/` (Qt frontend and Linux OS adapters), and `tools/Momentum4.Poc` (`m4poc`, a command line
 for hardware tests).
 
 The app only sends commands from the catalog that were verified on hardware. The dangerous ones (firmware, reset,
