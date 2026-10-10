@@ -32,11 +32,26 @@ Smart Control Plus APK research used public plaintext configuration and narrowly
 - For BTD 700 status/firmware: the USB dongle and the scoped hidraw permission rule below. USB discovery works independently of BlueZ.
 - A powered-on headset advertising the GAIA Bluetooth service.
 
-On Fedora/Nobara, if the dependencies are missing:
+Install the Python packages from your distribution:
 
 ```sh
+# Debian 13, Ubuntu 25.04 and newer
+sudo apt install python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets python3-dbus python3-gi
+# Fedora, Nobara
 sudo dnf install python3-pyside6 python3-dbus python3-gobject
+# Arch
+sudo pacman -S pyside6 python-dbus python-gobject
 ```
+
+Ubuntu 24.04 does not package PySide6. Install the other two packages with apt and PySide6 from PyPI for the system
+interpreter:
+
+```sh
+sudo apt install python3-pip python3-dbus python3-gi libegl1 libgl1 libxkbcommon0 libfontconfig1
+/usr/bin/python3 -m pip install --user --break-system-packages PySide6-Essentials
+```
+
+Debian 12 and Ubuntu 22.04 have neither a PySide6 package nor a new enough Python and are not supported.
 
 This is an instruction for the user; the installer does not install system packages or require root.
 
@@ -44,13 +59,22 @@ This is an instruction for the user; the installer does not install system packa
 
 ## Install and run
 
-From the repository root:
+From a release archive (`Momentum4Control-<version>-linux-x64.tar.gz`, or `-arm64` for 64-bit ARM), which already
+contains the built helper, so no .NET SDK is needed:
+
+```sh
+tar -xzf Momentum4Control-<version>-linux-x64.tar.gz
+cd momentum-control-linux-<version>
+./install.sh
+~/.local/bin/momentum-control
+~/.local/bin/momentumctl --help
+```
+
+Or from the repository root, building the helper yourself:
 
 ```sh
 ./linux/build.sh
 ./linux/install.sh
-~/.local/bin/momentum-control
-~/.local/bin/momentumctl --help
 ```
 
 “Momentum Control” also appears in the application launcher. Add `~/.local/bin` to your shell's PATH if you want to use the command names directly.
