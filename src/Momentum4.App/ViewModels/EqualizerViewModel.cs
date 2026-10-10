@@ -118,8 +118,10 @@ public sealed partial class EqualizerViewModel : ObservableObject
                 return;
             }
 
-            if (Bands.Count != state.Bands.Count)
+            if (Bands.Count != state.Bands.Count
+                || Bands.Zip(state.Bands).Any(pair => pair.First.FrequencyLabel != FormatFrequency(pair.Second.FrequencyHz)))
             {
+                ReloadPresetNames();
                 Bands.Clear();
                 foreach (var band in state.Bands)
                 {
@@ -249,7 +251,7 @@ public sealed partial class EqualizerViewModel : ObservableObject
     private void ReloadPresetNames()
     {
         PresetNames.Clear();
-        foreach (var preset in _presets.All)
+        foreach (var preset in _presets.All.Where(preset => _last is null || preset.GainsDb.Count == _last.Bands.Count))
         {
             PresetNames.Add(preset.Name);
         }

@@ -1,0 +1,171 @@
+{
+  "model": "M5AEBT Black",
+  "firmware": "6.21.5",
+  "exchanges": [
+    {
+      "command": "1206",
+      "request": "",
+      "response": "4d354145425420426c61636b00"
+    },
+    {
+      "command": "1201",
+      "request": "",
+      "response": "000600150005"
+    },
+    {
+      "command": "3605",
+      "request": "",
+      "response": "01"
+    },
+    {
+      "command": "3603",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "3601",
+      "request": "",
+      "response": "010f"
+    },
+    {
+      "command": "2001",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "0804",
+      "request": "",
+      "response": "0000"
+    },
+    {
+      "command": "3604",
+      "request": "00",
+      "response": ""
+    },
+    {
+      "command": "3605",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "3603",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "3601",
+      "request": "",
+      "response": "010f"
+    },
+    {
+      "command": "2001",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "0804",
+      "request": "",
+      "response": "0000"
+    },
+    {
+      "command": "3604",
+      "request": "01",
+      "response": ""
+    },
+    {
+      "command": "3605",
+      "request": "",
+      "response": "01"
+    },
+    {
+      "command": "3603",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "3601",
+      "request": "",
+      "response": "010f"
+    },
+    {
+      "command": "2001",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "0804",
+      "request": "",
+      "response": "0000"
+    },
+    {
+      "command": "3602",
+      "request": "01",
+      "response": ""
+    },
+    {
+      "command": "3605",
+      "request": "",
+      "response": "01"
+    },
+    {
+      "command": "3603",
+      "request": "",
+      "response": "01"
+    },
+    {
+      "command": "3601",
+      "request": "",
+      "response": "010f"
+    },
+    {
+      "command": "2001",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "0804",
+      "request": "",
+      "response": "0000"
+    },
+    {
+      "command": "3602",
+      "request": "00",
+      "response": ""
+    },
+    {
+      "command": "3604",
+      "request": "01",
+      "response": ""
+    },
+    {
+      "command": "3605",
+      "request": "",
+      "response": "01"
+    },
+    {
+      "command": "3603",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "3601",
+      "request": "",
+      "response": "010f"
+    },
+    {
+      "command": "2001",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "0804",
+      "request": "",
+      "response": "0000"
+    }
+  ],
+  "checks": [
+    "immersive_audio",
+    "head_tracking"
+  ],
+  "restored": true
+}

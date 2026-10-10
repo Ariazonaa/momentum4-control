@@ -1,0 +1,327 @@
+{
+  "model": "M5AEBT Black",
+  "firmware": "6.21.5",
+  "exchanges": [
+    {
+      "command": "1206",
+      "payload": "",
+      "response": "4d354145425420426c61636b00"
+    },
+    {
+      "command": "1201",
+      "payload": "",
+      "response": "000600150005"
+    },
+    {
+      "command": "1a02",
+      "payload": "00",
+      "response": ""
+    },
+    {
+      "command": "1803",
+      "payload": "",
+      "response": "64"
+    },
+    {
+      "command": "1a01",
+      "payload": "",
+      "response": "010003010200"
+    },
+    {
+      "command": "1a03",
+      "payload": "",
+      "response": "00"
+    },
+    {
+      "command": "1a05",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1805",
+      "payload": "",
+      "response": "00"
+    },
+    {
+      "command": "1804",
+      "payload": "01",
+      "response": ""
+    },
+    {
+      "command": "1803",
+      "payload": "",
+      "response": "64"
+    },
+    {
+      "command": "1a01",
+      "payload": "",
+      "response": "010003010200"
+    },
+    {
+      "command": "1a03",
+      "payload": "",
+      "response": "64"
+    },
+    {
+      "command": "1a05",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1805",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1802",
+      "payload": "4b",
+      "response": ""
+    },
+    {
+      "command": "1803",
+      "payload": "",
+      "response": "4b"
+    },
+    {
+      "command": "1a01",
+      "payload": "",
+      "response": "010003010200"
+    },
+    {
+      "command": "1a03",
+      "payload": "",
+      "response": "4b"
+    },
+    {
+      "command": "1a05",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1805",
+      "payload": "",
+      "response": "00"
+    },
+    {
+      "command": "1804",
+      "payload": "01",
+      "response": ""
+    },
+    {
+      "command": "1803",
+      "payload": "",
+      "response": "64"
+    },
+    {
+      "command": "1a01",
+      "payload": "",
+      "response": "010003010200"
+    },
+    {
+      "command": "1a03",
+      "payload": "",
+      "response": "64"
+    },
+    {
+      "command": "1a05",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1805",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1802",
+      "payload": "32",
+      "response": ""
+    },
+    {
+      "command": "1803",
+      "payload": "",
+      "response": "32"
+    },
+    {
+      "command": "1a01",
+      "payload": "",
+      "response": "010003010200"
+    },
+    {
+      "command": "1a03",
+      "payload": "",
+      "response": "32"
+    },
+    {
+      "command": "1a05",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1805",
+      "payload": "",
+      "response": "00"
+    },
+    {
+      "command": "1804",
+      "payload": "01",
+      "response": ""
+    },
+    {
+      "command": "1803",
+      "payload": "",
+      "response": "64"
+    },
+    {
+      "command": "1a01",
+      "payload": "",
+      "response": "010003010200"
+    },
+    {
+      "command": "1a03",
+      "payload": "",
+      "response": "64"
+    },
+    {
+      "command": "1a05",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1805",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1802",
+      "payload": "00",
+      "response": ""
+    },
+    {
+      "command": "1803",
+      "payload": "",
+      "response": "00"
+    },
+    {
+      "command": "1a01",
+      "payload": "",
+      "response": "010003010200"
+    },
+    {
+      "command": "1a03",
+      "payload": "",
+      "response": "00"
+    },
+    {
+      "command": "1a05",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1805",
+      "payload": "",
+      "response": "00"
+    },
+    {
+      "command": "1804",
+      "payload": "01",
+      "response": ""
+    },
+    {
+      "command": "1803",
+      "payload": "",
+      "response": "64"
+    },
+    {
+      "command": "1a01",
+      "payload": "",
+      "response": "010003010200"
+    },
+    {
+      "command": "1a03",
+      "payload": "",
+      "response": "64"
+    },
+    {
+      "command": "1a05",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1805",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1802",
+      "payload": "64",
+      "response": ""
+    },
+    {
+      "command": "1803",
+      "payload": "",
+      "response": "64"
+    },
+    {
+      "command": "1a01",
+      "payload": "",
+      "response": "010003010200"
+    },
+    {
+      "command": "1a03",
+      "payload": "",
+      "response": "64"
+    },
+    {
+      "command": "1a05",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1805",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1802",
+      "payload": "64",
+      "response": ""
+    },
+    {
+      "command": "1804",
+      "payload": "00",
+      "response": ""
+    },
+    {
+      "command": "1a02",
+      "payload": "00",
+      "response": ""
+    },
+    {
+      "command": "1803",
+      "payload": "",
+      "response": "64"
+    },
+    {
+      "command": "1a01",
+      "payload": "",
+      "response": "010003010200"
+    },
+    {
+      "command": "1a03",
+      "payload": "",
+      "response": "00"
+    },
+    {
+      "command": "1a05",
+      "payload": "",
+      "response": "01"
+    },
+    {
+      "command": "1805",
+      "payload": "",
+      "response": "00"
+    }
+  ],
+  "restored": true
+}

@@ -14,10 +14,10 @@ namespace Momentum4.Core.Device;
 /// Registrierung und – ab Phase E – die ANC-Setter. Die Setter schreiben nur; Verifikation und Zustandsübernahme
 /// macht <see cref="Services.Momentum4Service"/>.
 /// </summary>
-public sealed class Momentum4Client(GaiaCommandQueue queue)
+public sealed partial class Momentum4Client(GaiaCommandQueue queue)
 {
     /// <summary>Obergrenze für indizierte Serien (Geräteliste, EQ-Bänder) – Schutz vor unplausiblen Antworten.</summary>
-    private const int MaxIndexedItems = 16;
+
 
     public async Task<string> GetModelIdAsync(CancellationToken cancellationToken)
     {
@@ -88,7 +88,7 @@ public sealed class Momentum4Client(GaiaCommandQueue queue)
     public async Task<EqualizerState> ReadEqualizerAsync(IReadOnlyList<int>? knownFrequencies, bool readBassBoost, CancellationToken cancellationToken)
     {
         var config = UserEqCodec.DecodeConfig((await queue.SendAsync(CommandCatalog.GetEqConfig, cancellationToken)).Payload);
-        var bandCount = Math.Min(config.BandCount, MaxIndexedItems);
+        var bandCount = config.BandCount;
         var gains = await ReadEqGainsAsync(bandCount, cancellationToken);
 
         var frequencies = knownFrequencies is { } known && known.Count == bandCount ? known : await ReadBandFrequenciesAsync(bandCount, cancellationToken);
@@ -127,7 +127,7 @@ public sealed class Momentum4Client(GaiaCommandQueue queue)
     /// <summary>Liest <c>0x1400</c>, <c>0x1401</c> je Eintrag, <c>0x1407</c> und <c>0x1409</c>.</summary>
     public async Task<MultipointState> ReadMultipointAsync(CancellationToken cancellationToken)
     {
-        var count = Math.Min(DeviceManagementCodec.DecodeCount((await queue.SendAsync(CommandCatalog.GetPairedDeviceCount, cancellationToken)).Payload), MaxIndexedItems);
+        var count = DeviceManagementCodec.DecodeCount((await queue.SendAsync(CommandCatalog.GetPairedDeviceCount, cancellationToken)).Payload);
         var ownIndex = DeviceManagementCodec.DecodeOwnIndex((await queue.SendAsync(CommandCatalog.GetOwnDeviceIndex, cancellationToken)).Payload);
         var maxConnections = DeviceManagementCodec.DecodeMaxConnections((await queue.SendAsync(CommandCatalog.GetMaxConnections, cancellationToken)).Payload);
 
@@ -201,7 +201,7 @@ public sealed class Momentum4Client(GaiaCommandQueue queue)
 
     /// <summary>Gerätenamen lesen (localName, <c>0x2802</c>) – roher UTF-8.</summary>
     public async Task<string> ReadDeviceNameAsync(CancellationToken cancellationToken) =>
-        System.Text.Encoding.UTF8.GetString((await queue.SendAsync(CommandCatalog.GetLocalName, cancellationToken)).Payload).TrimEnd('\0');
+        SharedHeadsetCodec.DecodeName((await queue.SendAsync(CommandCatalog.GetLocalName, cancellationToken)).Payload, 128);
 
     /// <summary>Gerätenamen setzen (<c>0x2801</c>, roher UTF-8); Verifikation macht der Service.</summary>
     public Task SetDeviceNameAsync(string name, CancellationToken cancellationToken) =>

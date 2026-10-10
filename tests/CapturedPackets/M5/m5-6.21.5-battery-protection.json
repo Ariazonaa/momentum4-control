@@ -1,0 +1,42 @@
+{
+  "model": "M5AEBT Black",
+  "firmware": "6.21.5",
+  "exchanges": [
+    {
+      "command": "1206",
+      "request": "",
+      "response": "4d354145425420426c61636b00"
+    },
+    {
+      "command": "1201",
+      "request": "",
+      "response": "000600150005"
+    },
+    {
+      "command": "060b",
+      "request": "",
+      "response": "01"
+    },
+    {
+      "command": "060a",
+      "request": "00",
+      "response": ""
+    },
+    {
+      "command": "060b",
+      "request": "",
+      "response": "00"
+    },
+    {
+      "command": "060a",
+      "request": "01",
+      "response": ""
+    },
+    {
+      "command": "060b",
+      "request": "",
+      "response": "01"
+    }
+  ],
+  "restored": true
+}

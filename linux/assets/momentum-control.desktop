@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Momentum Control
+Comment=Bluetooth headset settings for Sennheiser MOMENTUM
+Exec=momentum-control
+Icon=momentum-control
+Terminal=false
+Categories=AudioVideo;Audio;
+StartupNotify=true

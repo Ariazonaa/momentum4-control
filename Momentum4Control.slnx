@@ -4,11 +4,13 @@
     <Project Path="src/Momentum4.Bluetooth/Momentum4.Bluetooth.csproj" />
     <Project Path="src/Momentum4.Cli/Momentum4.Cli.csproj" />
     <Project Path="src/Momentum4.Core/Momentum4.Core.csproj" />
+    <Project Path="src/Momentum4.CoreHost/Momentum4.CoreHost.csproj" />
     <Project Path="src/Momentum4.Protocol/Momentum4.Protocol.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Momentum4.Bluetooth.Tests/Momentum4.Bluetooth.Tests.csproj" />
     <Project Path="tests/Momentum4.Core.Tests/Momentum4.Core.Tests.csproj" />
+    <Project Path="tests/Momentum4.CoreHost.Tests/Momentum4.CoreHost.Tests.csproj" />
     <Project Path="tests/Momentum4.Protocol.Tests/Momentum4.Protocol.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">

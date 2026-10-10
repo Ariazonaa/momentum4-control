@@ -28,14 +28,16 @@ public sealed class GaiaCommandQueue : IDisposable
     private readonly CommandPolicy _policy;
     private readonly ILogger _logger;
     private readonly TimeProvider _time;
-    private readonly GaiaFrameReader _reader = new();
+    private readonly GaiaFrameReader _reader;
     private readonly Lock _readerGate = new();
     private readonly Lock _pendingGate = new();
     private readonly SemaphoreSlim _sendGate = new(1, 1);
     private PendingRequest? _pending;
+    private long _mutationSequence;
 
-    public GaiaCommandQueue(ITransport transport, CommandPolicy policy, ILogger<GaiaCommandQueue> logger, TimeProvider? timeProvider = null)
+    public GaiaCommandQueue(ITransport transport, CommandPolicy policy, ILogger<GaiaCommandQueue> logger, TimeProvider? timeProvider = null, bool strictFrames = false)
     {
+        _reader = new GaiaFrameReader(strictFrames);
         _transport = transport;
         _policy = policy;
         _logger = logger;
@@ -47,6 +49,8 @@ public sealed class GaiaCommandQueue : IDisposable
     /// <summary>Unaufgeforderte Meldungen des Headsets (Pakettyp Notification). Aufruf aus dem Empfangs-Thread.</summary>
     public event EventHandler<GaiaFrame>? NotificationReceived;
 
+    public event EventHandler? ProtocolFaulted;
+
     /// <summary>
     /// Für Antwort-Frames ohne passenden Request. Liefert der Handler <c>true</c>, war der Frame eine bekannte
     /// Zustandsmeldung (z. B. <c>0x0502</c> nach der Anmeldung von Feature 2) und gilt nicht als Fehler.
@@ -57,6 +61,10 @@ public sealed class GaiaCommandQueue : IDisposable
     public event EventHandler<GaiaTraffic>? Traffic;
 
     public CommandPolicy Policy => _policy;
+
+    internal long MutationSequence => Interlocked.Read(ref _mutationSequence);
+
+    internal bool IsConnected => _transport.State == TransportState.Connected;
 
     public Task<GaiaFrame> SendAsync(CommandDescriptor command, CancellationToken cancellationToken) =>
         SendAsync(command, ReadOnlyMemory<byte>.Empty, cancellationToken);
@@ -123,7 +131,19 @@ public sealed class GaiaCommandQueue : IDisposable
         {
             _logger.LogInformation("TX {Vendor:X4}:{Command:X4} {Name} [{Payload}]", command.Vendor, command.Command.Value, command.Name, Hex.Format(payload.Span));
             RaiseTraffic(new GaiaTraffic(_time.GetUtcNow(), TrafficDirection.Tx, frame, command.Name, null));
-            await _transport.WriteAsync(frame, cancellationToken);
+            if (command.Safety is SafetyClass.Setting or SafetyClass.Action)
+            {
+                Interlocked.Increment(ref _mutationSequence);
+            }
+
+            try
+            {
+                await _transport.WriteAsync(frame, cancellationToken);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException and not HeadsetUnavailableException)
+            {
+                throw new HeadsetUnavailableException("Headset transport I/O failed.", exception);
+            }
 
             var timeout = command.Timeout ?? DefaultTimeout;
             GaiaFrame response;
@@ -140,9 +160,19 @@ public sealed class GaiaCommandQueue : IDisposable
             var duration = _time.GetElapsedTime(pending.StartTimestamp);
             if (response.Type == PacketType.Error)
             {
+                if (response.Payload.Length != 1)
+                {
+                    throw new ProtocolFormatException("Malformed GAIA error response", response.Payload);
+                }
+
                 var error = new GaiaErrorException(command, response);
                 _logger.LogWarning("RX {Vendor:X4}:{Command:X4} {Name} [{Payload}] {Ms} ms ABGELEHNT", response.Vendor, response.Command.Value, command.Name, Hex.Format(response.Payload), (int)duration.TotalMilliseconds);
                 throw error;
+            }
+
+            if (command.Safety is SafetyClass.Setting or SafetyClass.Action && command != CommandCatalog.RegisterNotification && response.Payload.Length != 0)
+            {
+                throw new ProtocolFormatException("Malformed setter acknowledgement", response.Payload);
             }
 
             _logger.LogInformation("RX {Vendor:X4}:{Command:X4} {Name} [{Payload}] {Ms} ms OK", response.Vendor, response.Command.Value, command.Name, Hex.Format(response.Payload), (int)duration.TotalMilliseconds);
@@ -163,9 +193,18 @@ public sealed class GaiaCommandQueue : IDisposable
     private void OnDataReceived(object? sender, ReadOnlyMemory<byte> data)
     {
         GaiaReadResult result;
-        lock (_readerGate)
+        try
         {
-            result = _reader.Push(data.Span);
+            lock (_readerGate)
+            {
+                result = _reader.Push(data.Span);
+            }
+        }
+        catch (ProtocolFormatException exception)
+        {
+            FailPending(exception);
+            ProtocolFaulted?.Invoke(this, EventArgs.Empty);
+            return;
         }
 
         foreach (var diagnostic in result.Diagnostics)

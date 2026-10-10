@@ -49,7 +49,13 @@ public static class VersionsCodec
             throw new ProtocolFormatException("Modell-ID: leere Antwort", payload);
         }
 
-        return DecodeString(payload);
+        var model = DecodeString(payload);
+        if (payload.Length > 128 || model.Length == 0 || model.Any(char.IsControl))
+        {
+            throw new ProtocolFormatException("Invalid model identifier", payload);
+        }
+
+        return model;
     }
 
     internal static string DecodeString(ReadOnlySpan<byte> payload)
