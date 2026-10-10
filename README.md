@@ -1,11 +1,27 @@
 # MOMENTUM 4 Control
 
-Unofficial desktop app for the Sennheiser MOMENTUM 4 Wireless. It talks to the headset over Bluetooth
-(RFCOMM, GAIA) straight from Windows and runs locally. No cloud, no account, no telemetry.
+Unofficial desktop app for the Sennheiser MOMENTUM 4 Wireless, with limited support for the MOMENTUM 5. It talks to
+the headset over Bluetooth (RFCOMM, GAIA) straight from the PC and runs locally. No cloud, no account, no telemetry.
+There is a Windows app and a Linux companion; both use the same C# device core.
 
 Not affiliated with Sennheiser or Sonova.
 
-A native **Linux companion** is available in [`linux/`](linux/README.md), with a Qt desktop app (`momentum-control`) and CLI (`momentumctl`). Build its self-contained backend with `./linux/build.sh`, then install per user with `./linux/install.sh`. Windows and Linux share the C# device core; their native frontends remain separate. See [the architecture and feature guide](docs/architecture.md). MOMENTUM 5 has a limited, hardware-verified control profile for firmware 6.21.5; other firmware is read-only. The Linux app also reports BTD 700 USB audio status and offers explicit official firmware checks plus an experimental native updater; physical flashing/recovery have not been verified. The observed dongle/public latest are both 3.11.0, with no update or flash performed. See the Linux guide for its scoped USB permissions and the separate PC Bluetooth connection needed for headset controls alongside a BTD 700. The features and installation instructions below describe the Windows app.
+## Platforms and devices
+
+| | Windows app | Linux companion |
+|---|---|---|
+| Frontend | WinUI 3 app with tray icon, plus the `m4ctl` command line | Qt app `momentum-control`, plus the `momentumctl` command line |
+| How to get it | Installer or portable zip from the releases | Build and install from source, see [`linux/README.md`](linux/README.md) |
+| MOMENTUM 4 | Checked on a real headset, firmware 3.37.3 and 3.38.3 | Same commands and firmware gates through the shared core; the Linux hardware checks were done with a MOMENTUM 5 |
+| MOMENTUM 5 | The shared core recognises it, but nobody has tested it on Windows yet, and the M5-only controls have no UI here | Checked on a real headset, firmware 6.21.5 (model M5AEBT); any other firmware is read-only |
+| BTD 700 dongle | Not supported | USB status and codec selection; the firmware updater is experimental and flashing was never verified on hardware |
+
+On the MOMENTUM 5 the Linux app adds transparency level, immersive audio, head tracking and battery protection. Its
+equalizer has eight bands instead of five, and wind reduction only knows off and maximum. The details, the BTD 700
+permissions and the remaining limits are in the [Linux guide](linux/README.md), the
+[validation notes](docs/linux-validation.md) and the [architecture overview](docs/architecture.md).
+
+The rest of this README describes the Windows app.
 
 ![Main window](assets/main-window.png)
 
@@ -43,6 +59,8 @@ exception is Transparent Hearing, which is always off right after the headset po
 ## Installation
 
 Each release has two builds. Both are self-contained, so you don't need a .NET runtime or the Windows App SDK.
+The releases only contain the Windows app; the Linux companion is installed from source as described in
+[`linux/README.md`](linux/README.md).
 
 **Installer** (`Momentum4Control-Setup-<version>.exe`): just run it. It installs per user without admin rights, adds a
 Start-menu shortcut, can enable autostart, and registers a normal uninstaller under *Apps & features*.
@@ -117,7 +135,8 @@ for hardware tests).
 The app only sends commands from the catalog that were verified on hardware. The dangerous ones (firmware, reset,
 deleting pairings) are blocked in every policy. A debug build adds a read-only protocol inspector under Settings →
 Advanced. The workflows in [`.github/workflows/`](.github/workflows/) run the tests on Linux and the whole solution
-(build, tests, format, Native AOT) on Windows; `release.yml` builds the installer and portable zip on a `v*` tag.
+(build, tests, format, Native AOT) on Windows; `linux-app.yml` builds the Linux helper and runs the Linux tests;
+`release.yml` builds the installer and portable zip on a `v*` tag.
 
 ## Privacy
 
@@ -166,7 +185,7 @@ purely descriptively (nominative use) and imply no trademark relationship.
 
 **No manufacturer material.** This repository and the app contain no Sennheiser, Sonova or Qualcomm software, firmware,
 audio prompts, or other assets. The official app that was analyzed for interoperability is neither included nor
-redistributed here. The tool is meant for owners of a lawfully acquired MOMENTUM 4.
+redistributed here. The tool is meant for owners of a lawfully acquired device.
 
 **Concerns / takedown.** If you hold rights in anything referenced here and have a concern, please open an issue.
 I'll respond and act in good faith. See also [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md),
@@ -185,5 +204,6 @@ under § 69g(2). Encrypted or otherwise effectively protected content is not cir
 
 **Warranty disclaimer.** The software is provided without any warranty and is used at your own risk. It sends
 Bluetooth commands to the headset; to the extent permitted by law, no liability is accepted for damage to the device,
-data loss or other consequences. Commands known to be dangerous (firmware update, factory reset, disconnecting or
-deleting pairings) are deliberately blocked.
+data loss or other consequences. Headset commands known to be dangerous (firmware update, factory reset, disconnecting
+or deleting pairings) are deliberately blocked. The Linux companion contains an experimental firmware updater for the
+BTD 700 dongle; it only runs when you start it yourself and has not been verified on hardware.
