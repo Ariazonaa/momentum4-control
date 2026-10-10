@@ -52,6 +52,25 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           Get-ChildItem "$env:GITHUB_WORKSPACE\dist" | ForEach-Object { Get-FileHash $_.FullName -Algorithm SHA256 | Format-List Hash, Path }
 
+      # The tray app has no visible window; setup has to end it itself or the upgrade fails on locked files.
+      - name: Upgrade over a running app
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem "$env:GITHUB_WORKSPACE\dist\Momentum4Control-Setup-*.exe").FullName
+          $app = "$env:LOCALAPPDATA\Programs\Momentum 4 Control\Momentum4Control.exe"
+          $log = "$env:RUNNER_TEMP\setup.log"
+          function Install {
+            $p = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LOG=$log" -Wait -PassThru
+            if ($p.ExitCode) { Get-Content $log -Tail 40; throw "Setup exit code $($p.ExitCode)." }
+          }
+          Install
+          $old = Start-Process $app -ArgumentList '--minimized' -PassThru
+          Start-Sleep 10
+          if ($old.HasExited) { throw "The app did not stay running (exit code $($old.ExitCode))." }
+          Install
+          if (-not $old.HasExited) { throw 'Setup left the running app alive.' }
+          Select-String -Path $log -Pattern 'taskkill|in use|Restart Manager' | Select-Object -First 10 | ForEach-Object Line
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

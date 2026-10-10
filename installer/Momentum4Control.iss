@@ -78,3 +78,17 @@ Filename: "{app}\{#AppExe}"; Description: "{#AppName} jetzt starten"; Flags: now
 [UninstallRun]
 ; Falls die App noch läuft, vor dem Entfernen beenden
 Filename: "{cmd}"; Parameters: "/C taskkill /IM {#AppExe} /F"; Flags: runhidden; RunOnceId: "KillApp"
+
+[Code]
+// Die App sitzt ohne sichtbares Fenster im Infobereich; der Restart Manager (CloseApplications) bekommt sie so nicht
+// zuverlässig beendet und Setup scheitert dann an gesperrten Dateien. PrepareToInstall läuft vor der Prüfung auf
+// verwendete Dateien, deshalb werden App und Kommandozeile hier direkt beendet.
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+begin
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM {#AppExe}', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM m4ctl.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(500);
+  Result := '';
+end;
