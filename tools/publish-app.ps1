@@ -1,11 +1,13 @@
 # Veröffentlicht die App als Native-AOT-Build (Release, x64, self-contained). Standard-Ziel ist
 # %LOCALAPPDATA%\Momentum4Control.build\publish\app – außerhalb des Repos, weil X: eine SMB-Freigabe ist.
-# Die CI übergibt mit -Output einen Ordner im Arbeitsverzeichnis.
+# Die CI übergibt mit -Output einen Ordner im Arbeitsverzeichnis. -Version überschreibt die Version aus
+# Directory.Build.props; die App vergleicht sie bei der Update-Prüfung mit dem neuesten Release.
 #
 # Native AOT braucht den MSVC-Linker (Visual Studio Build Tools mit „Desktop development with C++“). Das ILCompiler-
 # Paket sucht ihn über vswhere.exe, das nicht im PATH liegt – deshalb wird der Installer-Ordner hier ergänzt.
 param(
-    [string]$Output = (Join-Path $env:LOCALAPPDATA 'Momentum4Control.build\publish\app')
+    [string]$Output = (Join-Path $env:LOCALAPPDATA 'Momentum4Control.build\publish\app'),
+    [string]$Version = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -16,12 +18,14 @@ if (-not (Test-Path (Join-Path $installer 'vswhere.exe'))) {
 
 $env:PATH = "$installer;$env:PATH"
 $root = Split-Path $PSScriptRoot -Parent
+$versionArgs = @()
+if ($Version) { $versionArgs = @("-p:Version=$Version") }
 
-dotnet publish (Join-Path $root 'src\Momentum4.App\Momentum4.App.csproj') -c Release -o $Output -nologo
+dotnet publish (Join-Path $root 'src\Momentum4.App\Momentum4.App.csproj') -c Release -o $Output -nologo @versionArgs
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish fehlgeschlagen ($LASTEXITCODE)." }
 
 # m4ctl (Kommandozeile) als eigene AOT-Exe in denselben Ordner
-dotnet publish (Join-Path $root 'src\Momentum4.Cli\Momentum4.Cli.csproj') -c Release -o $Output -nologo
+dotnet publish (Join-Path $root 'src\Momentum4.Cli\Momentum4.Cli.csproj') -c Release -o $Output -nologo @versionArgs
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish m4ctl fehlgeschlagen ($LASTEXITCODE)." }
 
 $exe = Join-Path $Output 'Momentum4Control.exe'

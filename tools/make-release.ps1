@@ -31,8 +31,12 @@ foreach ($d in @($stageRoot, $Dist)) { if (Test-Path $d) { Remove-Item $d -Recur
 
 # --- 1. App veröffentlichen (self-contained AOT, App + m4ctl) ---
 Write-Host 'Veröffentliche App (Native AOT) ...' -ForegroundColor Cyan
-& (Join-Path $PSScriptRoot 'publish-app.ps1') -Output $appDir
+& (Join-Path $PSScriptRoot 'publish-app.ps1') -Output $appDir -Version $Version
 if ($LASTEXITCODE -ne 0) { throw "publish-app.ps1 fehlgeschlagen ($LASTEXITCODE)." }
+# Die Update-Prüfung der App vergleicht ihre eigene Version mit dem Release-Tag. Stimmt sie nicht, meldet die App
+# auch nach dem Update weiter ein Update.
+$built = (Get-Item (Join-Path $appDir 'Momentum4Control.exe')).VersionInfo.ProductVersion.Split('+')[0]
+if ($built -ne $Version) { throw "Momentum4Control.exe meldet Version $built statt $Version." }
 
 # --- 2. Portable Variante (Marker + LIESMICH, dann ZIP) ---
 Write-Host 'Baue portable Variante ...' -ForegroundColor Cyan
